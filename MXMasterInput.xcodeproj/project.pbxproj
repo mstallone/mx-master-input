@@ -1,0 +1,540 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05D339E13E5096A7E170099F /* MXMasterSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7371C962B1B1ED1934E9064E /* MXMasterSession.swift */; };
+		0689F38D02A3742D7236673A /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 032E143D4B316AF0895DE7B5 /* ServiceManagement.framework */; };
+		15E95014820B44706BDB2E45 /* SystemActionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */; };
+		1D03F8A94012F3B2B324AB99 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2D88DB57C3D15E4703B7005 /* IOKit.framework */; };
+		20E772DB1B45054B88E30F0D /* HIDPPPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D1BFEA6F73571C940134D1 /* HIDPPPacket.swift */; };
+		268AEC21B37EA5826FD94484 /* MXMasterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AE164A088EDEA5D1B102B4 /* MXMasterModels.swift */; };
+		372FD6B314164E288EF2FBB9 /* HIDPPPacketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7C8C8C5D73CFFB1640112C /* HIDPPPacketTests.swift */; };
+		452FAFAD1DE5438503E9FA3A /* MXMasterSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7371C962B1B1ED1934E9064E /* MXMasterSession.swift */; };
+		4BC8F0A608A8BE32471E1AA9 /* MXNativeBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 0CFE2CFD99A371D6A5D0D4C6 /* MXNativeBridge.m */; };
+		4C51C66573BCE73482822165 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89B09753B9F619A3F0B4D9DB /* Carbon.framework */; };
+		4E5187552BF55A076F0AADA4 /* SystemActionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */; };
+		4EC57867999354085EF87D73 /* AdditiveGestureRecognizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02C14FB023C4A6EEB077362B /* AdditiveGestureRecognizerTests.swift */; };
+		56736A760CC770D42C06C128 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89B09753B9F619A3F0B4D9DB /* Carbon.framework */; };
+		67A737BEA410154843F739A1 /* MXMasterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AE164A088EDEA5D1B102B4 /* MXMasterModels.swift */; };
+		67BF7B23D8F5BD5BF5007EE8 /* SystemActionControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */; };
+		6BF95B299D531CEFF852380E /* SecureInputHardwareProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */; };
+		6DCD9E3DCCF473366AE8A91C /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C6CB1B338CC88EA3C5CBE4 /* AppModel.swift */; };
+		916BD598B3B9640CC684C292 /* MXMasterRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AD212CA1B5967D445BA982 /* MXMasterRuntime.swift */; };
+		A56BC6D05DBE20743F338401 /* AdditiveGestureRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0FDA0272E14F1E399CDAB02 /* AdditiveGestureRecognizer.swift */; };
+		ADDEEB28AB866ACC0B633442 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2D88DB57C3D15E4703B7005 /* IOKit.framework */; };
+		B73B4B34ECE4F7119A095B3A /* MXNativeBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 0CFE2CFD99A371D6A5D0D4C6 /* MXNativeBridge.m */; };
+		C75E8103BC7CB5A0DC04D495 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E57549B452778B6D03DE41CA /* ApplicationServices.framework */; };
+		C7E3D915D580D263D53C0A9C /* HIDPPPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D1BFEA6F73571C940134D1 /* HIDPPPacket.swift */; };
+		CA38D57154E5F5B7A0CE9642 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ECE80ECD3D7A371D1A80C88E /* AppKit.framework */; };
+		DAB28CA1148E866B7E578FAF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89745B8445A57933C2DE334A /* ContentView.swift */; };
+		E827B99378DCF7F485A5366E /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E57549B452778B6D03DE41CA /* ApplicationServices.framework */; };
+		F650C242B45B2E3BBB9CBE56 /* MXMasterInputApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C2D1CE837377227F90EBDCE /* MXMasterInputApp.swift */; };
+		FCDA98EF5B5D4F7D30B66806 /* AdditiveGestureRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0FDA0272E14F1E399CDAB02 /* AdditiveGestureRecognizer.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		01DFF8E42F318388510E9119 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		02C14FB023C4A6EEB077362B /* AdditiveGestureRecognizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdditiveGestureRecognizerTests.swift; sourceTree = "<group>"; };
+		032E143D4B316AF0895DE7B5 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
+		0CFE2CFD99A371D6A5D0D4C6 /* MXNativeBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MXNativeBridge.m; sourceTree = "<group>"; };
+		0E7C8C8C5D73CFFB1640112C /* HIDPPPacketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDPPPacketTests.swift; sourceTree = "<group>"; };
+		53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActionController.swift; sourceTree = "<group>"; };
+		55683321A33F694CED85DFC8 /* MXMasterInputTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MXMasterInputTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		57D1BFEA6F73571C940134D1 /* HIDPPPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDPPPacket.swift; sourceTree = "<group>"; };
+		6DDBFAF631A40FEA77754B4D /* MXMasterInput.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MXMasterInput.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7371C962B1B1ED1934E9064E /* MXMasterSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterSession.swift; sourceTree = "<group>"; };
+		7C2D1CE837377227F90EBDCE /* MXMasterInputApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterInputApp.swift; sourceTree = "<group>"; };
+		89745B8445A57933C2DE334A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		89B09753B9F619A3F0B4D9DB /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
+		90C6CB1B338CC88EA3C5CBE4 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		91AD212CA1B5967D445BA982 /* MXMasterRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterRuntime.swift; sourceTree = "<group>"; };
+		94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputHardwareProbeTests.swift; sourceTree = "<group>"; };
+		A2D88DB57C3D15E4703B7005 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		C7AE164A088EDEA5D1B102B4 /* MXMasterModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterModels.swift; sourceTree = "<group>"; };
+		D0FDA0272E14F1E399CDAB02 /* AdditiveGestureRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdditiveGestureRecognizer.swift; sourceTree = "<group>"; };
+		E57549B452778B6D03DE41CA /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
+		EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActionControllerTests.swift; sourceTree = "<group>"; };
+		ECE80ECD3D7A371D1A80C88E /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		FDD748A4751D2210BA24C541 /* MXNativeBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MXNativeBridge.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		195AF15DA63EC7B6DD06E56A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CA38D57154E5F5B7A0CE9642 /* AppKit.framework in Frameworks */,
+				C75E8103BC7CB5A0DC04D495 /* ApplicationServices.framework in Frameworks */,
+				56736A760CC770D42C06C128 /* Carbon.framework in Frameworks */,
+				1D03F8A94012F3B2B324AB99 /* IOKit.framework in Frameworks */,
+				0689F38D02A3742D7236673A /* ServiceManagement.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C39B984C4201B772FC78CAC1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E827B99378DCF7F485A5366E /* ApplicationServices.framework in Frameworks */,
+				4C51C66573BCE73482822165 /* Carbon.framework in Frameworks */,
+				ADDEEB28AB866ACC0B633442 /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0E2545441AB6965C5261C873 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				E67D233264F6FE24CBABDF21 /* MXMasterInputTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		124C0AC7DDD3776B349C3F94 /* MXMasterInput */ = {
+			isa = PBXGroup;
+			children = (
+				90C6CB1B338CC88EA3C5CBE4 /* AppModel.swift */,
+				89745B8445A57933C2DE334A /* ContentView.swift */,
+				01DFF8E42F318388510E9119 /* Info.plist */,
+				7C2D1CE837377227F90EBDCE /* MXMasterInputApp.swift */,
+				91AD212CA1B5967D445BA982 /* MXMasterRuntime.swift */,
+				CBF40BE1ACF25C303078ADA2 /* Actions */,
+				6895CB012E25BAE10802DB9A /* Gestures */,
+				BED6B4937B239D5C277FA1EC /* HID */,
+				5F792F78838DFDF116030B66 /* NativeBridge */,
+			);
+			path = MXMasterInput;
+			sourceTree = "<group>";
+		};
+		4DDAEEE4F0BB516D8B252DAB /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				124C0AC7DDD3776B349C3F94 /* MXMasterInput */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		5F792F78838DFDF116030B66 /* NativeBridge */ = {
+			isa = PBXGroup;
+			children = (
+				FDD748A4751D2210BA24C541 /* MXNativeBridge.h */,
+				0CFE2CFD99A371D6A5D0D4C6 /* MXNativeBridge.m */,
+			);
+			path = NativeBridge;
+			sourceTree = "<group>";
+		};
+		6895CB012E25BAE10802DB9A /* Gestures */ = {
+			isa = PBXGroup;
+			children = (
+				D0FDA0272E14F1E399CDAB02 /* AdditiveGestureRecognizer.swift */,
+			);
+			path = Gestures;
+			sourceTree = "<group>";
+		};
+		B96D53B6805C1A6178DDA330 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6DDBFAF631A40FEA77754B4D /* MXMasterInput.app */,
+				55683321A33F694CED85DFC8 /* MXMasterInputTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BED6B4937B239D5C277FA1EC /* HID */ = {
+			isa = PBXGroup;
+			children = (
+				57D1BFEA6F73571C940134D1 /* HIDPPPacket.swift */,
+				C7AE164A088EDEA5D1B102B4 /* MXMasterModels.swift */,
+				7371C962B1B1ED1934E9064E /* MXMasterSession.swift */,
+			);
+			path = HID;
+			sourceTree = "<group>";
+		};
+		CBF40BE1ACF25C303078ADA2 /* Actions */ = {
+			isa = PBXGroup;
+			children = (
+				53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */,
+			);
+			path = Actions;
+			sourceTree = "<group>";
+		};
+		DFC00C752DD5CA26D6E2B911 = {
+			isa = PBXGroup;
+			children = (
+				4DDAEEE4F0BB516D8B252DAB /* Sources */,
+				0E2545441AB6965C5261C873 /* Tests */,
+				FFC2FCD7AF96D93A31C7AB0E /* Frameworks */,
+				B96D53B6805C1A6178DDA330 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E67D233264F6FE24CBABDF21 /* MXMasterInputTests */ = {
+			isa = PBXGroup;
+			children = (
+				02C14FB023C4A6EEB077362B /* AdditiveGestureRecognizerTests.swift */,
+				0E7C8C8C5D73CFFB1640112C /* HIDPPPacketTests.swift */,
+				94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */,
+				EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */,
+			);
+			path = MXMasterInputTests;
+			sourceTree = "<group>";
+		};
+		FFC2FCD7AF96D93A31C7AB0E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				ECE80ECD3D7A371D1A80C88E /* AppKit.framework */,
+				E57549B452778B6D03DE41CA /* ApplicationServices.framework */,
+				89B09753B9F619A3F0B4D9DB /* Carbon.framework */,
+				A2D88DB57C3D15E4703B7005 /* IOKit.framework */,
+				032E143D4B316AF0895DE7B5 /* ServiceManagement.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3C991039757C95B884FF38B9 /* MXMasterInputTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 405BD0F44708E2517AD0437A /* Build configuration list for PBXNativeTarget "MXMasterInputTests" */;
+			buildPhases = (
+				CCB4E56C2330E5ECDD1385F5 /* Sources */,
+				C39B984C4201B772FC78CAC1 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MXMasterInputTests;
+			packageProductDependencies = (
+			);
+			productName = MXMasterInputTests;
+			productReference = 55683321A33F694CED85DFC8 /* MXMasterInputTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		5B6DF86276DC98B2DA3AABAE /* MXMasterInput */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E2C7951C6B5E576BD9559BAB /* Build configuration list for PBXNativeTarget "MXMasterInput" */;
+			buildPhases = (
+				3DA5BBCC81E3548AC86E42EE /* Sources */,
+				195AF15DA63EC7B6DD06E56A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MXMasterInput;
+			packageProductDependencies = (
+			);
+			productName = MXMasterInput;
+			productReference = 6DDBFAF631A40FEA77754B4D /* MXMasterInput.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DE2240A455264D3DFD5FE6A0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5B6DF86276DC98B2DA3AABAE = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = B2DDEC18F835826F6EA2F577 /* Build configuration list for PBXProject "MXMasterInput" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = DFC00C752DD5CA26D6E2B911;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B96D53B6805C1A6178DDA330 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5B6DF86276DC98B2DA3AABAE /* MXMasterInput */,
+				3C991039757C95B884FF38B9 /* MXMasterInputTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3DA5BBCC81E3548AC86E42EE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A56BC6D05DBE20743F338401 /* AdditiveGestureRecognizer.swift in Sources */,
+				6DCD9E3DCCF473366AE8A91C /* AppModel.swift in Sources */,
+				DAB28CA1148E866B7E578FAF /* ContentView.swift in Sources */,
+				C7E3D915D580D263D53C0A9C /* HIDPPPacket.swift in Sources */,
+				F650C242B45B2E3BBB9CBE56 /* MXMasterInputApp.swift in Sources */,
+				268AEC21B37EA5826FD94484 /* MXMasterModels.swift in Sources */,
+				916BD598B3B9640CC684C292 /* MXMasterRuntime.swift in Sources */,
+				05D339E13E5096A7E170099F /* MXMasterSession.swift in Sources */,
+				4BC8F0A608A8BE32471E1AA9 /* MXNativeBridge.m in Sources */,
+				15E95014820B44706BDB2E45 /* SystemActionController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CCB4E56C2330E5ECDD1385F5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FCDA98EF5B5D4F7D30B66806 /* AdditiveGestureRecognizer.swift in Sources */,
+				4EC57867999354085EF87D73 /* AdditiveGestureRecognizerTests.swift in Sources */,
+				20E772DB1B45054B88E30F0D /* HIDPPPacket.swift in Sources */,
+				372FD6B314164E288EF2FBB9 /* HIDPPPacketTests.swift in Sources */,
+				67A737BEA410154843F739A1 /* MXMasterModels.swift in Sources */,
+				452FAFAD1DE5438503E9FA3A /* MXMasterSession.swift in Sources */,
+				B73B4B34ECE4F7119A095B3A /* MXNativeBridge.m in Sources */,
+				6BF95B299D531CEFF852380E /* SecureInputHardwareProbeTests.swift in Sources */,
+				4E5187552BF55A076F0AADA4 /* SystemActionController.swift in Sources */,
+				67BF7B23D8F5BD5BF5007EE8 /* SystemActionControllerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		19CB908F66A7EF5BE10363C1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Sources/MXMasterInput/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mattstallone.mxmasterinput;
+				PRODUCT_NAME = MXMasterInput;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/MXMasterInput/NativeBridge/MXNativeBridge.h;
+			};
+			name = Debug;
+		};
+		25C3706889EDB3655B79F6C1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		73EFBA690699F2FCF034A0DA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		90CC546FB4545B9913CFDCFD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mattstallone.mxmasterinput.tests;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/MXMasterInput/NativeBridge/MXNativeBridge.h;
+				TEST_HOST = "";
+			};
+			name = Release;
+		};
+		A31936D25320ED2FFC01C491 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mattstallone.mxmasterinput.tests;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/MXMasterInput/NativeBridge/MXNativeBridge.h;
+				TEST_HOST = "";
+			};
+			name = Debug;
+		};
+		CB859CF965D456D0CD3568C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Sources/MXMasterInput/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.mattstallone.mxmasterinput;
+				PRODUCT_NAME = MXMasterInput;
+				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = Sources/MXMasterInput/NativeBridge/MXNativeBridge.h;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		405BD0F44708E2517AD0437A /* Build configuration list for PBXNativeTarget "MXMasterInputTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A31936D25320ED2FFC01C491 /* Debug */,
+				90CC546FB4545B9913CFDCFD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B2DDEC18F835826F6EA2F577 /* Build configuration list for PBXProject "MXMasterInput" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				25C3706889EDB3655B79F6C1 /* Debug */,
+				73EFBA690699F2FCF034A0DA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E2C7951C6B5E576BD9559BAB /* Build configuration list for PBXNativeTarget "MXMasterInput" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				19CB908F66A7EF5BE10363C1 /* Debug */,
+				CB859CF965D456D0CD3568C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DE2240A455264D3DFD5FE6A0 /* Project object */;
+}

@@ -1,0 +1,74 @@
+name: MXMasterInput
+
+options:
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "15.0"
+
+settings:
+  base:
+    CLANG_ENABLE_MODULES: YES
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+
+targets:
+  MXMasterInput:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/MXMasterInput
+    info:
+      path: Sources/MXMasterInput/Info.plist
+      properties:
+        CFBundleDisplayName: MX Master Input
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSUIElement: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mattstallone.mxmasterinput
+        PRODUCT_NAME: MXMasterInput
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/MXMasterInput/NativeBridge/MXNativeBridge.h
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - sdk: AppKit.framework
+      - sdk: ApplicationServices.framework
+      - sdk: Carbon.framework
+      - sdk: IOKit.framework
+      - sdk: ServiceManagement.framework
+
+  MXMasterInputTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/MXMasterInputTests
+      - path: Sources/MXMasterInput/Gestures/AdditiveGestureRecognizer.swift
+      - path: Sources/MXMasterInput/Actions/SystemActionController.swift
+      - path: Sources/MXMasterInput/HID/HIDPPPacket.swift
+      - path: Sources/MXMasterInput/HID/MXMasterModels.swift
+      - path: Sources/MXMasterInput/HID/MXMasterSession.swift
+      - path: Sources/MXMasterInput/NativeBridge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mattstallone.mxmasterinput.tests
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/MXMasterInput/NativeBridge/MXNativeBridge.h
+        TEST_HOST: ""
+        BUNDLE_LOADER: ""
+    dependencies:
+      - sdk: ApplicationServices.framework
+      - sdk: Carbon.framework
+      - sdk: IOKit.framework
+
+schemes:
+  MXMasterInput:
+    build:
+      targets:
+        MXMasterInput: all
+        MXMasterInputTests:
+          - test
+    test:
+      targets:
+        - MXMasterInputTests
