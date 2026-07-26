@@ -2,7 +2,9 @@
 .build/
 .swiftpm/
 build/
+dist/
 DerivedData*/
+*.xcarchive
 *.dSYM
 *.xcresult
 *.xcuserstate

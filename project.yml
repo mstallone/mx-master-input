@@ -24,6 +24,7 @@ targets:
         CFBundleDisplayName: MX Master Input
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
+        LSApplicationCategoryType: public.app-category.utilities
         LSUIElement: true
     settings:
       base:

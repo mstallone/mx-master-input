@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Test, sign, notarize, and publish
+    runs-on: macos-26
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      APPLE_TEAM_ID: BU2V7652M5
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify build environment
+        run: |
+          set -euo pipefail
+          sw_vers
+          xcodebuild -version
+
+      - name: Validate release tag and secrets
+        env:
+          DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          APPLE_NOTARY_PRIVATE_KEY_BASE64: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY_BASE64 }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tags must use the form v1.2.3."
+            exit 1
+          fi
+
+          for name in \
+            DEVELOPER_ID_CERTIFICATE_BASE64 \
+            DEVELOPER_ID_CERTIFICATE_PASSWORD \
+            APPLE_NOTARY_PRIVATE_KEY_BASE64 \
+            APPLE_NOTARY_KEY_ID \
+            APPLE_NOTARY_ISSUER_ID
+          do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing required repository secret: $name"
+              exit 1
+            fi
+          done
+
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project MXMasterInput.xcodeproj \
+            -scheme MXMasterInput \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData-tests" \
+            -destination "platform=macOS,arch=$(uname -m)" \
+            CODE_SIGNING_ALLOWED=NO \
+            build test
+
+      - name: Import NextByte Developer ID certificate
+        env:
+          DEVELOPER_ID_CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_ID_CERTIFICATE_BASE64 }}
+          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          certificate_path="$RUNNER_TEMP/developer-id.p12"
+          keychain_path="$RUNNER_TEMP/mx-master-input-signing.keychain-db"
+          keychain_password="$(openssl rand -base64 32)"
+
+          printf '%s' "$DEVELOPER_ID_CERTIFICATE_BASE64" \
+            | /usr/bin/base64 -D >"$certificate_path"
+
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" \
+            -k "$keychain_path" \
+            -P "$DEVELOPER_ID_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$keychain_password" \
+            "$keychain_path"
+
+          security list-keychains -d user -s "$keychain_path"
+
+          identities="$(security find-identity -v -p codesigning "$keychain_path")"
+          signing_identity="$(
+            printf '%s\n' "$identities" \
+              | awk -F'\"' '/Developer ID Application:/ { print $2; exit }'
+          )"
+
+          if [[ -z "$signing_identity" ]]; then
+            echo "::error::The certificate is not a Developer ID Application certificate."
+            exit 1
+          fi
+          if [[ "$signing_identity" != *"($APPLE_TEAM_ID)" ]]; then
+            echo "::error::The Developer ID certificate does not belong to NextByte team $APPLE_TEAM_ID."
+            exit 1
+          fi
+
+          printf 'DEVELOPER_ID_APPLICATION_IDENTITY=%s\n' "$signing_identity" \
+            >>"$GITHUB_ENV"
+          printf 'RELEASE_KEYCHAIN_PATH=%s\n' "$keychain_path" >>"$GITHUB_ENV"
+
+      - name: Prepare notarization key
+        env:
+          APPLE_NOTARY_PRIVATE_KEY_BASE64: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY_BASE64 }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+        run: |
+          set -euo pipefail
+          key_path="$RUNNER_TEMP/AuthKey_${APPLE_NOTARY_KEY_ID}.p8"
+          printf '%s' "$APPLE_NOTARY_PRIVATE_KEY_BASE64" \
+            | /usr/bin/base64 -D >"$key_path"
+          chmod 600 "$key_path"
+          printf 'APPLE_NOTARY_KEY_PATH=%s\n' "$key_path" >>"$GITHUB_ENV"
+
+      - name: Build signed and notarized release
+        env:
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+        run: Scripts/build-release.sh "$GITHUB_REF_NAME"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/MXMasterInput-${version}-macOS.zip" \
+            "dist/MXMasterInput-${version}-macOS.zip.sha256" \
+            --verify-tag \
+            --title "MX Master Input $version" \
+            --generate-notes
+
+      - name: Remove signing material
+        if: always()
+        env:
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+        run: |
+          keychain_path="$RUNNER_TEMP/mx-master-input-signing.keychain-db"
+          if [[ -f "$keychain_path" ]]; then
+            security delete-keychain "$keychain_path"
+          fi
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          if [[ -n "$APPLE_NOTARY_KEY_ID" ]]; then
+            rm -f "$RUNNER_TEMP/AuthKey_${APPLE_NOTARY_KEY_ID}.p8"
+          fi
