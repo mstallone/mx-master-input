@@ -13,7 +13,7 @@ struct ActionResult: Equatable, Sendable {
 }
 
 final class SystemActionController: @unchecked Sendable {
-    private struct PendingAction: Sendable {
+    private struct PendingSpaceAction: Sendable {
         let action: PanelAction
         let keyCode: Int
         let completion: @Sendable (ActionResult) -> Void
@@ -24,20 +24,20 @@ final class SystemActionController: @unchecked Sendable {
         label: "com.mattstallone.mxmasterinput.actions",
         qos: .userInteractive
     )
-    let minimumActionInterval: TimeInterval
+    let minimumSpaceActionInterval: TimeInterval
     private let postControlArrow: @Sendable (Int) -> Bool
-    private var pendingActions: [PendingAction] = []
-    private var lastPostTime = 0.0
-    private var isDrainScheduled = false
+    private var pendingSpaceActions: [PendingSpaceAction] = []
+    private var lastSpacePostTime = 0.0
+    private var isSpaceDrainScheduled = false
 
     init(
-        minimumActionInterval: TimeInterval = 1.2,
+        minimumSpaceActionInterval: TimeInterval = 1.2,
         postControlArrow: @escaping @Sendable (Int) -> Bool = {
             MXPostControlArrow($0)
         }
     ) {
-        precondition(minimumActionInterval >= 0)
-        self.minimumActionInterval = minimumActionInterval
+        precondition(minimumSpaceActionInterval >= 0)
+        self.minimumSpaceActionInterval = minimumSpaceActionInterval
         self.postControlArrow = postControlArrow
     }
 
@@ -71,7 +71,7 @@ final class SystemActionController: @unchecked Sendable {
             )
         }
 
-        enqueue(
+        enqueueSpaceAction(
             action: mapping.0,
             keyCode: mapping.1,
             completion: completion
@@ -81,57 +81,65 @@ final class SystemActionController: @unchecked Sendable {
     func performTap(
         completion: @escaping @Sendable (ActionResult) -> Void
     ) {
-        enqueue(
-            action: .missionControl,
-            keyCode: Self.missionControlKeyCode,
-            completion: completion
-        )
+        outputQueue.async { [self] in
+            let secureInputWasEnabled = secureInputEnabled
+            completion(
+                ActionResult(
+                    action: .missionControl,
+                    succeeded: postControlArrow(
+                        Self.missionControlKeyCode
+                    ),
+                    secureInputWasEnabled: secureInputWasEnabled
+                )
+            )
+        }
     }
 
-    private func enqueue(
+    private func enqueueSpaceAction(
         action: PanelAction,
         keyCode: Int,
         completion: @escaping @Sendable (ActionResult) -> Void
     ) {
         outputQueue.async { [self] in
-            pendingActions.append(
-                PendingAction(
+            pendingSpaceActions.append(
+                PendingSpaceAction(
                     action: action,
                     keyCode: keyCode,
                     completion: completion
                 )
             )
-            drainWhenReady()
+            drainSpaceActionsWhenReady()
         }
     }
 
-    private func drainWhenReady() {
-        guard !pendingActions.isEmpty, !isDrainScheduled else {
+    private func drainSpaceActionsWhenReady() {
+        guard !pendingSpaceActions.isEmpty,
+              !isSpaceDrainScheduled else {
             return
         }
 
         let now = ProcessInfo.processInfo.systemUptime
         let remainingDelay = max(
             0,
-            minimumActionInterval - (now - lastPostTime)
+            minimumSpaceActionInterval - (now - lastSpacePostTime)
         )
         guard remainingDelay == 0 else {
-            isDrainScheduled = true
+            isSpaceDrainScheduled = true
             outputQueue.asyncAfter(
                 deadline: .now() + remainingDelay
             ) { [self] in
-                isDrainScheduled = false
+                isSpaceDrainScheduled = false
                 // Dispatch timers may wake slightly early. Recalculate from
                 // the actual last post instead of submitting prematurely.
-                drainWhenReady()
+                drainSpaceActionsWhenReady()
             }
             return
         }
 
-        let pending = pendingActions.removeFirst()
+        let pending = pendingSpaceActions.removeFirst()
         let secureInputWasEnabled = secureInputEnabled
         let succeeded = postControlArrow(pending.keyCode)
-        lastPostTime = ProcessInfo.processInfo.systemUptime
+        lastSpacePostTime = ProcessInfo.processInfo.systemUptime
         pending.completion(
             ActionResult(
                 action: pending.action,
@@ -139,6 +147,6 @@ final class SystemActionController: @unchecked Sendable {
                 secureInputWasEnabled: secureInputWasEnabled
             )
         )
-        drainWhenReady()
+        drainSpaceActionsWhenReady()
     }
 }

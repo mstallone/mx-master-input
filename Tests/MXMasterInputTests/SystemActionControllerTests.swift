@@ -41,7 +41,7 @@ final class SystemActionControllerTests: XCTestCase {
     func testProductionCadenceExceedsMeasuredSpaceAnimation() {
         let controller = SystemActionController()
 
-        XCTAssertEqual(controller.minimumActionInterval, 1.2)
+        XCTAssertEqual(controller.minimumSpaceActionInterval, 1.2)
     }
 
     func testRapidAlternatingActionsArePostedInOrderAndPaced() {
@@ -49,7 +49,7 @@ final class SystemActionControllerTests: XCTestCase {
         let completion = expectation(description: "All actions complete")
         completion.expectedFulfillmentCount = 6
         let controller = SystemActionController(
-            minimumActionInterval: 0.02,
+            minimumSpaceActionInterval: 0.02,
             postControlArrow: { keyCode in
                 recorder.post(keyCode: keyCode)
             }
@@ -94,5 +94,47 @@ final class SystemActionControllerTests: XCTestCase {
         ) {
             XCTAssertGreaterThanOrEqual(second.time - first.time, 0.015)
         }
+    }
+
+    func testMissionControlBypassesPendingSpaceAction() {
+        let recorder = PostedActionRecorder()
+        let completion = expectation(description: "All actions complete")
+        completion.expectedFulfillmentCount = 3
+        let controller = SystemActionController(
+            minimumSpaceActionInterval: 0.2,
+            postControlArrow: { keyCode in
+                recorder.post(keyCode: keyCode)
+            }
+        )
+
+        controller.perform(.left) { result in
+            recorder.complete(action: result.action)
+            completion.fulfill()
+        }
+        controller.perform(.right) { result in
+            recorder.complete(action: result.action)
+            completion.fulfill()
+        }
+        controller.performTap { result in
+            recorder.complete(action: result.action)
+            completion.fulfill()
+        }
+
+        wait(for: [completion], timeout: 2)
+        let snapshot = recorder.snapshot()
+
+        XCTAssertEqual(snapshot.entries.map(\.keyCode), [124, 126, 123])
+        XCTAssertEqual(
+            snapshot.actions,
+            [.nextSpace, .missionControl, .previousSpace]
+        )
+        XCTAssertLessThan(
+            snapshot.entries[1].time - snapshot.entries[0].time,
+            0.15
+        )
+        XCTAssertGreaterThanOrEqual(
+            snapshot.entries[2].time - snapshot.entries[0].time,
+            0.19
+        )
     }
 }
