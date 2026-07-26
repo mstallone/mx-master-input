@@ -77,6 +77,24 @@ xcodebuild \
   build test
 ```
 
+## Releases
+
+Version tags such as `v0.1.0` run the GitHub release workflow. It tests the app,
+builds a universal `arm64`/`x86_64` archive, signs it with NextByte's Developer
+ID Application certificate, submits it to Apple notarization, staples the
+ticket, and verifies it with both Gatekeeper and `syspolicy_check` before
+publishing the ZIP and its SHA-256 checksum. The workflow rejects unsigned,
+Apple Development-signed, unnotarized, or wrongly versioned builds.
+
+The repository needs these Actions secrets before a maintainer pushes a version
+tag:
+
+- `DEVELOPER_ID_CERTIFICATE_BASE64`
+- `DEVELOPER_ID_CERTIFICATE_PASSWORD`
+- `APPLE_NOTARY_PRIVATE_KEY_BASE64`
+- `APPLE_NOTARY_KEY_ID`
+- `APPLE_NOTARY_ISSUER_ID`
+
 ## How it works
 
 MX Master Input reads Logitech's vendor-defined HID++ reports directly and
