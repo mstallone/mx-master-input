@@ -10,8 +10,7 @@ when you release—just like a native macOS gesture.
 This is not conventional mouse-button remapping. The app reads Logitech HID++
 reports directly and drives the phased system gesture understood by Dock, so
 the interaction is continuous rather than a keyboard shortcut followed by an
-uninterruptible animation. It does not depend on keyboard event taps, Mouser,
-Karabiner-Elements, or Logi Options+.
+uninterruptible animation. It does not require Logi Options+.
 
 ## Why this matters
 
@@ -91,57 +90,13 @@ The DockSwipe field mapping was informed by the reverse engineering published
 in [Mac Mouse Fix](https://github.com/noah-nuebling/mac-mouse-fix), under the
 [MMF License](https://github.com/noah-nuebling/mac-mouse-fix/blob/master/License).
 
-## Why Secure Input does not block this design
+## Permissions and Secure Input
 
-Secure Event Input protects keyboard delivery from other applications that
-monitor keyboard events. MX Master Input opens only Logitech's vendor-defined
-HID++ collection with `IOHIDDevice`, below the keyboard-event-monitor path.
-
-Space motion is posted as a phased system gesture rather than keyboard input.
-The Mission Control tap and compatibility fallback use Control-arrow keyboard
-events through Accessibility. Secure Input does not affect direct HID++ capture,
-but macOS ultimately decides whether a synthesized output event is delivered.
-
-The Settings window reports the live Secure Input state. Its runtime
-verification changes to Submitted when the app receives a physical panel input
-and posts the mapped system event while Secure Input is enabled.
-
-Accessibility/Post Event permission is required for output posting. The app
-does not install an event tap and does not read keyboard events.
-
-References:
-
-- [Apple IOHIDDevice user-space API](https://developer.apple.com/documentation/iokit/iohiddevice_h_user-space)
-- [Apple Secure Event Input technical note](https://developer.apple.com/library/archive/technotes/tn2150/_index.html)
-
-## Why there is no kext or DriverKit extension
-
-A kernel extension is unnecessary for the physical input path: macOS already
-exposes the receiver's HID++ collection to user space. A virtual HID device
-would add a second input stack and requires Apple's restricted
-`com.apple.developer.hid.virtual.device` entitlement. This app instead talks
-directly to the real device and posts the translated system events in process.
-
-References:
-
-- [Apple DriverKit](https://developer.apple.com/documentation/DriverKit)
-- [Apple HIDDriverKit](https://developer.apple.com/documentation/hiddriverkit)
-
-## Safety boundaries
-
-- There is no process enumeration, `kill`, `pkill`, WindowServer operation, or
-  application-management code.
-- Quit terminates only MX Master Input.
-- HID access is non-exclusive and limited to Logitech vendor-defined
-collections with a 20-byte output report.
-- The app restores default Sense Panel reporting before closing its HID
-  connection.
-- No global output is sent until diverted panel motion clears both activation
-  thresholds or the press qualifies as a short click.
-- Every begun Dock swipe receives an end or cancellation during normal disable,
-  replacement, and termination paths.
-- Startup auto-enable occurs only after a prior successful enable and only when
-  Post Event access is already granted.
+The app requires Accessibility/Post Event permission to submit Mission Control
+and Space actions. It reads the Sense Panel directly from Logitech's HID++
+collection, so physical gesture detection continues while macOS Secure Event
+Input is enabled. The Settings window reports both permission and Secure Input
+status.
 
 ## Build and tests
 
