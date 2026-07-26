@@ -118,6 +118,20 @@ MXMASTER_RUN_HARDWARE_PROBE=1 \
 This probe runs the device session in observation mode. It does not divert the
 panel, change haptic state, or post a system event.
 
+## Manual Secure Input gesture test
+
+Run the included AppleScript to open a focused hidden-answer field, which
+enables macOS Secure Event Input:
+
+```sh
+osascript Scripts/SecureInputGestureTest.applescript
+```
+
+Keep the insertion point in the hidden field while trying a Sense Panel
+gesture. Mission Control or a Space change may remove focus, so return to the
+dialog and refocus the field before each separate test. The dialog closes after
+10 minutes if `Finish` is not selected.
+
 ## End-to-end verification
 
 1. Wake the MX Master 4.
