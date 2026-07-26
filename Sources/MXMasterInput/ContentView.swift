@@ -49,8 +49,8 @@ struct ContentView: View {
 
                 Text(
                     "MX Master input is read directly from HID++. Space changes "
-                    + "use a continuous system gesture, while Mission Control "
-                    + "uses Control–Up through Accessibility. Runtime "
+                    + "use the Apple-native continuous gesture pipeline, while "
+                    + "Mission Control uses Control–Up through Accessibility. Runtime "
                     + "verification confirms submission, not delivery."
                 )
                 .font(.caption)
@@ -63,10 +63,11 @@ struct ContentView: View {
                 mapping("Drag right", "Fluid swipe · Previous Space")
 
                 Text(
-                    "Hold the Sense Panel and drag horizontally. The desktop "
-                    + "follows the mouse continuously, reversals take effect "
-                    + "inside the same gesture, and release commits or snaps "
-                    + "back. A central dead zone filters click pressure."
+                    "Magic Trackpad-style control: hold the Sense Panel and "
+                    + "drag horizontally. The desktop follows the mouse, "
+                    + "reversals take effect inside the same gesture, and "
+                    + "release commits or snaps back. A central dead zone "
+                    + "filters click pressure."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

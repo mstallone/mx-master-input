@@ -1,9 +1,42 @@
 # MX Master Input
 
-A single native macOS menu-bar app for the Logitech MX Master 4 Sense Panel.
-It reads Logitech HID++ reports directly, so its input path does not depend on
-keyboard shortcuts, keyboard event taps, Mouser, Karabiner-Elements, or Logi
-Options+.
+**First-party-feeling, Apple-native gestures on a Logitech MX Master.**
+
+MX Master Input brings the progressive Space-switching experience of Apple's
+Magic Trackpad to the MX Master 4 Sense Panel. The desktop stays attached to
+your movement, responds when you reverse direction, and commits or snaps back
+when you release—just like a native macOS gesture.
+
+This is not conventional mouse-button remapping. The app reads Logitech HID++
+reports directly and drives the phased system gesture understood by Dock, so
+the interaction is continuous rather than a keyboard shortcut followed by an
+uninterruptible animation. It does not depend on keyboard event taps, Mouser,
+Karabiner-Elements, or Logi Options+.
+
+## Why this matters
+
+Most mouse gesture utilities can only turn a gesture into a one-shot action
+such as Control-Left or Control-Right. That asks macOS to start a Space
+transition, but the mouse no longer controls what happens next: the animation
+runs by itself, quick reversals are dropped, and the result feels like a
+shortcut.
+
+Apple's trackpad experience is different because it sends one continuous,
+phased gesture to the window system. The current Space moves with your hand.
+You can slow down, stop, reverse, commit, or cancel before lifting your fingers.
+That direct manipulation—not merely triggering the same destination—is what
+makes the interaction feel first-party.
+
+MX Master Input gives the Sense Panel that same interaction model:
+
+- progressive, analog control of the Space transition
+- immediate reversals within the active gesture
+- natural release behavior that commits or snaps back
+- a simple click for Mission Control
+- direct HID++ input that continues to work while Secure Input is enabled
+
+The result is an MX Master that participates in macOS gestures as an input
+surface, instead of impersonating one with a sequence of keystrokes.
 
 Version 0.1.0 is pinned to:
 
@@ -42,9 +75,11 @@ diversion.
 
 macOS does not publish an API for injecting the progressive gesture consumed by
 Dock. On macOS 26, MX Master Input emits the private `DockSwipe` event shape
-used by the system: a cumulative horizontal progress value accompanied by
-`began`, `changed`, `ended`, and `cancelled` phases. This path was verified on
-build 25F84 by observing the active Space ID before and after both directions.
+used by the native gesture pipeline: a cumulative horizontal progress value
+accompanied by `began`, `changed`, `ended`, and `cancelled` phases. Unlike
+posting Control-arrow repeatedly, each RawXY report updates the gesture already
+in progress. This path was verified on build 25F84 in both directions and by
+retargeting a transition while its settling animation was still active.
 
 The private event-field layout is inherently OS-version-sensitive. The app does
 not use it on macOS 27, where the representation changed; it falls back to the
