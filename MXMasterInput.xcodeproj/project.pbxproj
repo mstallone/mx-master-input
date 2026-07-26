@@ -35,6 +35,7 @@
 		DAB28CA1148E866B7E578FAF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89745B8445A57933C2DE334A /* ContentView.swift */; };
 		E827B99378DCF7F485A5366E /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E57549B452778B6D03DE41CA /* ApplicationServices.framework */; };
 		F650C242B45B2E3BBB9CBE56 /* MXMasterInputApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C2D1CE837377227F90EBDCE /* MXMasterInputApp.swift */; };
+		F83B4E90254BB576670C96FB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CAC87ADD1CF153EDF904165D /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureInputHardwareProbeTests.swift; sourceTree = "<group>"; };
 		A2D88DB57C3D15E4703B7005 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		C7AE164A088EDEA5D1B102B4 /* MXMasterModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterModels.swift; sourceTree = "<group>"; };
+		CAC87ADD1CF153EDF904165D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E57549B452778B6D03DE41CA /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
 		E7097C9039F4425B01CA17EB /* ContinuousGestureRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousGestureRecognizer.swift; sourceTree = "<group>"; };
 		EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActionControllerTests.swift; sourceTree = "<group>"; };
@@ -101,6 +103,7 @@
 			isa = PBXGroup;
 			children = (
 				90C6CB1B338CC88EA3C5CBE4 /* AppModel.swift */,
+				CAC87ADD1CF153EDF904165D /* Assets.xcassets */,
 				89745B8445A57933C2DE334A /* ContentView.swift */,
 				01DFF8E42F318388510E9119 /* Info.plist */,
 				7C2D1CE837377227F90EBDCE /* MXMasterInputApp.swift */,
@@ -224,6 +227,7 @@
 			buildConfigurationList = E2C7951C6B5E576BD9559BAB /* Build configuration list for PBXNativeTarget "MXMasterInput" */;
 			buildPhases = (
 				3DA5BBCC81E3548AC86E42EE /* Sources */,
+				DF5B57C7B03E7EDFE691051B /* Resources */,
 				195AF15DA63EC7B6DD06E56A /* Frameworks */,
 			);
 			buildRules = (
@@ -270,6 +274,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DF5B57C7B03E7EDFE691051B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F83B4E90254BB576670C96FB /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		3DA5BBCC81E3548AC86E42EE /* Sources */ = {

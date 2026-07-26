@@ -29,6 +29,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mattstallone.mxmasterinput
         PRODUCT_NAME: MXMasterInput
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_OBJC_BRIDGING_HEADER: Sources/MXMasterInput/NativeBridge/MXNativeBridge.h
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
