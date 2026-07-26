@@ -17,23 +17,44 @@ Version 0.1.0 is pinned to:
 | Sense Panel input | Action |
 | --- | --- |
 | Tap | Control-Up — Mission Control |
-| Move left | Control-Right — Next Space |
-| Move right | Control-Left — Previous Space |
+| Hold and drag left | Continuous system swipe — Next Space |
+| Hold and drag right | Continuous system swipe — Previous Space |
 
 The Space mapping is reversed: every movement direction in the left half-plane
-changes to the next Space, and every direction in the right half-plane changes
-to the previous Space. Vertical drift does not disqualify a gesture. A narrow
-horizontal dead zone prevents the RawXY pulse caused by pressing the panel from
-choosing a Space. A short click that stays inside that dead zone opens Mission
-Control. RawXY reports received during a 60-millisecond post-press arming window
-are discarded so movement queued before the press cannot trigger a Space
-change. After each committed direction, continued travel that way is ignored
-until reversal begins. Every committed direction posts its Space shortcut
-immediately. Mission Control also posts immediately when the panel is released.
+reveals the next Space, and every movement direction in the right half-plane
+reveals the previous Space. Once the motion crosses the activation threshold,
+the app begins one phased Dock swipe. Every subsequent RawXY sample updates its
+progress, so the desktop follows the mouse and reversals modify the same active
+gesture. Releasing the panel ends the stream and lets Dock commit the Space or
+snap back. There is no action queue or intentional animation delay.
+
+Vertical drift does not disqualify a gesture. A narrow horizontal dead zone
+prevents the RawXY pulse caused by pressing the panel from beginning a swipe. A
+short click that stays inside that dead zone opens Mission Control. RawXY
+reports received during a 60-millisecond post-press arming window are discarded
+so movement queued before the press cannot cross into the new gesture.
 
 The haptic engine is turned off before the panel is diverted. Activation fails
 closed if the MX Master 4 does not confirm the haptic command or the Sense Panel
 diversion.
+
+## Progressive Space gesture implementation
+
+macOS does not publish an API for injecting the progressive gesture consumed by
+Dock. On macOS 26, MX Master Input emits the private `DockSwipe` event shape
+used by the system: a cumulative horizontal progress value accompanied by
+`began`, `changed`, `ended`, and `cancelled` phases. This path was verified on
+build 25F84 by observing the active Space ID before and after both directions.
+
+The private event-field layout is inherently OS-version-sensitive. The app does
+not use it on macOS 27, where the representation changed; it falls back to the
+standard Accessibility-posted Control-arrow action instead. Every active
+synthetic swipe is cancelled before a replacement begins, when the device
+session stops, and when the app terminates.
+
+The DockSwipe field mapping was informed by the reverse engineering published
+in [Mac Mouse Fix](https://github.com/noah-nuebling/mac-mouse-fix), under the
+[MMF License](https://github.com/noah-nuebling/mac-mouse-fix/blob/master/License).
 
 ## Why Secure Input does not block this design
 
@@ -41,18 +62,17 @@ Secure Event Input protects keyboard delivery from other applications that
 monitor keyboard events. MX Master Input opens only Logitech's vendor-defined
 HID++ collection with `IOHIDDevice`, below the keyboard-event-monitor path.
 
-Outputs are the standard macOS Control-arrow shortcuts, posted as keyboard
-events through Accessibility. This avoids private Dock notifications and
-undocumented synthetic swipe fields. Secure Input does not affect direct HID++
-capture, but macOS ultimately decides whether an Accessibility-posted shortcut
-is delivered while Secure Input is active.
+Space motion is posted as a phased system gesture rather than keyboard input.
+The Mission Control tap and compatibility fallback use Control-arrow keyboard
+events through Accessibility. Secure Input does not affect direct HID++ capture,
+but macOS ultimately decides whether a synthesized output event is delivered.
 
 The Settings window reports the live Secure Input state. Its runtime
 verification changes to Submitted when the app receives a physical panel input
-and posts the mapped shortcut while Secure Input is enabled.
+and posts the mapped system event while Secure Input is enabled.
 
-Accessibility/Post Event permission is required for shortcut posting. The
-app does not install an event tap and does not read keyboard events.
+Accessibility/Post Event permission is required for output posting. The app
+does not install an event tap and does not read keyboard events.
 
 References:
 
@@ -64,8 +84,8 @@ References:
 A kernel extension is unnecessary for the physical input path: macOS already
 exposes the receiver's HID++ collection to user space. A virtual HID device
 would add a second input stack and requires Apple's restricted
-`com.apple.developer.hid.virtual.device` entitlement. This app instead talks to
-the real device and posts standard keyboard shortcuts through Accessibility.
+`com.apple.developer.hid.virtual.device` entitlement. This app instead talks
+directly to the real device and posts the translated system events in process.
 
 References:
 
@@ -81,8 +101,10 @@ References:
 collections with a 20-byte output report.
 - The app restores default Sense Panel reporting before closing its HID
   connection.
-- No global output is sent until a diverted Sense Panel report commits a
-  gesture or qualifies as a short click.
+- No global output is sent until diverted panel motion clears both activation
+  thresholds or the press qualifies as a short click.
+- Every begun Dock swipe receives an end or cancellation during normal disable,
+  replacement, and termination paths.
 - Startup auto-enable occurs only after a prior successful enable and only when
   Post Event access is already granted.
 
@@ -141,12 +163,11 @@ dialog and refocus the field before each separate test. The dialog closes after
 5. Confirm the app shows `Secure Input: Enabled`.
 6. Click and release the Sense Panel without holding. Confirm Mission Control
    opens.
-7. Hold the Sense Panel, move diagonally left past the threshold, then move
-   diagonally right past the threshold without releasing.
-8. Confirm macOS changes to the next Space and then returns to the previous
-   Space.
+7. Hold the Sense Panel and drag left. Confirm the current desktop follows the
+   mouse progressively; reverse before releasing and confirm it follows back.
+8. Drag far enough left and release to commit the next Space. Repeat to the
+   right to return to the previous Space.
 9. Confirm `Runtime verification` reads Submitted.
 
-The Control-arrow mappings follow the shortcuts configured in macOS Keyboard
-settings. If one is disabled or remapped there, the corresponding panel action
-will follow that system configuration.
+Mission Control and the compatibility fallback follow the Control-arrow
+shortcuts configured in macOS Keyboard settings.

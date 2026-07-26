@@ -49,9 +49,9 @@ struct ContentView: View {
 
                 Text(
                     "MX Master input is read directly from HID++. Space changes "
-                    + "and window actions use Control-arrow shortcuts posted "
-                    + "through Accessibility. Runtime verification confirms "
-                    + "submission, not delivery, while Secure Input is on."
+                    + "use a continuous system gesture, while Mission Control "
+                    + "uses Control–Up through Accessibility. Runtime "
+                    + "verification confirms submission, not delivery."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -59,14 +59,14 @@ struct ContentView: View {
 
             Section("Panel mapping") {
                 mapping("Tap", "Control–Up · Mission Control")
-                mapping("Left", "Control–Right · Next Space")
-                mapping("Right", "Control–Left · Previous Space")
+                mapping("Drag left", "Fluid swipe · Next Space")
+                mapping("Drag right", "Fluid swipe · Previous Space")
 
                 Text(
-                    "Any movement into the left or right half-plane changes "
-                    + "Spaces in that direction. A central dead zone filters "
-                    + "click pressure. Actions post immediately. A short click "
-                    + "opens Mission Control."
+                    "Hold the Sense Panel and drag horizontally. The desktop "
+                    + "follows the mouse continuously, reversals take effect "
+                    + "inside the same gesture, and release commits or snaps "
+                    + "back. A central dead zone filters click pressure."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

@@ -45,7 +45,7 @@ targets:
     platform: macOS
     sources:
       - path: Tests/MXMasterInputTests
-      - path: Sources/MXMasterInput/Gestures/AdditiveGestureRecognizer.swift
+      - path: Sources/MXMasterInput/Gestures/ContinuousGestureRecognizer.swift
       - path: Sources/MXMasterInput/Actions/SystemActionController.swift
       - path: Sources/MXMasterInput/HID/HIDPPPacket.swift
       - path: Sources/MXMasterInput/HID/MXMasterModels.swift

@@ -2,122 +2,175 @@ import Foundation
 import XCTest
 
 private final class PostedActionRecorder: @unchecked Sendable {
-    struct Entry {
-        let keyCode: Int
+    struct DockEntry {
+        let progress: Double
+        let phase: Int
         let time: TimeInterval
     }
 
     private let lock = NSLock()
-    private var storedEntries: [Entry] = []
-    private var storedActions: [PanelAction] = []
+    private var storedDockEntries: [DockEntry] = []
+    private var storedKeyCodes: [Int] = []
+    var dockResult = true
 
-    func post(keyCode: Int) -> Bool {
+    func postDock(progress: Double, phase: Int) -> Bool {
         lock.lock()
-        storedEntries.append(
-            Entry(
-                keyCode: keyCode,
+        storedDockEntries.append(
+            DockEntry(
+                progress: progress,
+                phase: phase,
                 time: ProcessInfo.processInfo.systemUptime
             )
         )
+        let result = dockResult
+        lock.unlock()
+        return result
+    }
+
+    func postKey(keyCode: Int) -> Bool {
+        lock.lock()
+        storedKeyCodes.append(keyCode)
         lock.unlock()
         return true
     }
 
-    func complete(action: PanelAction) {
+    func snapshot() -> (dock: [DockEntry], keys: [Int]) {
         lock.lock()
-        storedActions.append(action)
-        lock.unlock()
-    }
-
-    func snapshot() -> (entries: [Entry], actions: [PanelAction]) {
-        lock.lock()
-        let snapshot = (storedEntries, storedActions)
+        let snapshot = (storedDockEntries, storedKeyCodes)
         lock.unlock()
         return snapshot
     }
 }
 
 final class SystemActionControllerTests: XCTestCase {
-    func testRapidAlternatingActionsArePostedImmediatelyInOrder() throws {
+    func testContinuousMotionPostsBeganChangedAndEndedProgress() {
         let recorder = PostedActionRecorder()
-        let completion = expectation(description: "All actions complete")
-        completion.expectedFulfillmentCount = 6
-        let controller = SystemActionController(
-            postControlArrow: { keyCode in
-                recorder.post(keyCode: keyCode)
-            }
-        )
+        let completion = expectation(description: "Gesture completes")
+        let controller = makeController(recorder: recorder)
 
-        for direction in [
-            GestureDirection.left,
-            .right,
-            .left,
-            .right,
-            .left,
-            .right,
-        ] {
-            controller.perform(direction) { result in
-                recorder.complete(action: result.action)
-                completion.fulfill()
-            }
+        controller.performGesture(.began(dx: -30)) { _ in
+            XCTFail("Began must not complete the action")
+        }
+        controller.performGesture(.changed(dx: -100)) { _ in
+            XCTFail("Changed must not complete the action")
+        }
+        controller.performGesture(.changed(dx: 80)) { _ in
+            XCTFail("Changed must not complete the action")
+        }
+        controller.performGesture(.ended) { result in
+            XCTAssertEqual(result.action, .nextSpace)
+            XCTAssertTrue(result.succeeded)
+            completion.fulfill()
         }
 
         wait(for: [completion], timeout: 2)
-        let snapshot = recorder.snapshot()
+        let entries = recorder.snapshot().dock
 
-        XCTAssertEqual(
-            snapshot.entries.map(\.keyCode),
-            [124, 123, 124, 123, 124, 123]
-        )
-        XCTAssertEqual(
-            snapshot.actions,
-            [
-                .nextSpace,
-                .previousSpace,
-                .nextSpace,
-                .previousSpace,
-                .nextSpace,
-                .previousSpace,
-            ]
-        )
-        let firstEntry = try XCTUnwrap(snapshot.entries.first)
-        let lastEntry = try XCTUnwrap(snapshot.entries.last)
-        XCTAssertLessThan(lastEntry.time - firstEntry.time, 0.15)
+        XCTAssertEqual(entries.map(\.phase), [1, 2, 2, 4])
+        XCTAssertEqual(entries[0].progress, 0.072, accuracy: 0.000_001)
+        XCTAssertEqual(entries[1].progress, 0.312, accuracy: 0.000_001)
+        XCTAssertEqual(entries[2].progress, 0.12, accuracy: 0.000_001)
+        XCTAssertEqual(entries[3].progress, 0.12, accuracy: 0.000_001)
     }
 
-    func testMissionControlPostsImmediatelyAfterSpaceActions() throws {
+    func testRapidReversalsArePostedImmediatelyWithoutQueuing() throws {
         let recorder = PostedActionRecorder()
-        let completion = expectation(description: "All actions complete")
-        completion.expectedFulfillmentCount = 3
-        let controller = SystemActionController(
-            postControlArrow: { keyCode in
-                recorder.post(keyCode: keyCode)
-            }
-        )
+        let completion = expectation(description: "Gesture completes")
+        let controller = makeController(recorder: recorder)
 
-        controller.perform(.left) { result in
-            recorder.complete(action: result.action)
+        controller.performGesture(.began(dx: -30)) { _ in }
+        for dx in [100, -100, 100, -100, 100, -100] {
+            controller.performGesture(.changed(dx: dx)) { _ in }
+        }
+        controller.performGesture(.ended) { _ in
             completion.fulfill()
         }
-        controller.perform(.right) { result in
-            recorder.complete(action: result.action)
-            completion.fulfill()
+
+        wait(for: [completion], timeout: 2)
+        let entries = recorder.snapshot().dock
+        let first = try XCTUnwrap(entries.first)
+        let last = try XCTUnwrap(entries.last)
+
+        XCTAssertEqual(entries.map(\.phase), [1, 2, 2, 2, 2, 2, 2, 4])
+        XCTAssertLessThan(last.time - first.time, 0.15)
+    }
+
+    func testCancellationAlwaysClosesActiveDockSwipe() {
+        let recorder = PostedActionRecorder()
+        let controller = makeController(recorder: recorder)
+
+        controller.performGesture(.began(dx: 40)) { _ in }
+        controller.performGesture(.changed(dx: -10)) { _ in }
+        controller.performGesture(.cancelled) { _ in
+            XCTFail("Cancellation must not report an action")
         }
-        controller.performTap { result in
-            recorder.complete(action: result.action)
+        controller.cancelGestureSynchronously()
+
+        let entries = recorder.snapshot().dock
+        XCTAssertEqual(entries.map(\.phase), [1, 2, 8])
+        XCTAssertEqual(entries[2].progress, -0.072, accuracy: 0.000_001)
+    }
+
+    func testNewGestureCancelsAnOverlappingGestureFirst() {
+        let recorder = PostedActionRecorder()
+        let controller = makeController(recorder: recorder)
+
+        controller.performGesture(.began(dx: -30)) { _ in }
+        controller.performGesture(.began(dx: 30)) { _ in }
+        controller.cancelGestureSynchronously()
+
+        XCTAssertEqual(
+            recorder.snapshot().dock.map(\.phase),
+            [1, 8, 1, 8]
+        )
+    }
+
+    func testKeyboardFallbackRunsOnlyWhenPrivateBeginFails() {
+        let recorder = PostedActionRecorder()
+        recorder.dockResult = false
+        let completion = expectation(description: "Fallback completes")
+        let controller = makeController(recorder: recorder)
+
+        controller.performGesture(.began(dx: -30)) { _ in }
+        controller.performGesture(.changed(dx: 100)) { _ in }
+        controller.performGesture(.ended) { result in
+            XCTAssertEqual(result.action, .previousSpace)
+            XCTAssertTrue(result.succeeded)
             completion.fulfill()
         }
 
         wait(for: [completion], timeout: 2)
         let snapshot = recorder.snapshot()
+        XCTAssertEqual(snapshot.dock.map(\.phase), [1])
+        XCTAssertEqual(snapshot.keys, [123])
+    }
 
-        XCTAssertEqual(snapshot.entries.map(\.keyCode), [124, 123, 126])
-        XCTAssertEqual(
-            snapshot.actions,
-            [.nextSpace, .previousSpace, .missionControl]
+    func testMissionControlTapStillUsesImmediateAccessibilityShortcut() {
+        let recorder = PostedActionRecorder()
+        let completion = expectation(description: "Tap completes")
+        let controller = makeController(recorder: recorder)
+
+        controller.performTap { result in
+            XCTAssertEqual(result.action, .missionControl)
+            XCTAssertTrue(result.succeeded)
+            completion.fulfill()
+        }
+
+        wait(for: [completion], timeout: 2)
+        XCTAssertEqual(recorder.snapshot().keys, [126])
+    }
+
+    private func makeController(
+        recorder: PostedActionRecorder
+    ) -> SystemActionController {
+        SystemActionController(
+            rawMotionUnitsPerSpace: 500,
+            postControlArrow: { keyCode in
+                recorder.postKey(keyCode: keyCode)
+            },
+            postDockSwipe: { progress, phase in
+                recorder.postDock(progress: progress, phase: phase)
+            }
         )
-        let firstEntry = try XCTUnwrap(snapshot.entries.first)
-        let lastEntry = try XCTUnwrap(snapshot.entries.last)
-        XCTAssertLessThan(lastEntry.time - firstEntry.time, 0.15)
     }
 }

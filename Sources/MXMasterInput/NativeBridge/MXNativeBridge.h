@@ -32,6 +32,10 @@ typedef void (^MXHIDReportHandler)(NSData *report);
 FOUNDATION_EXPORT BOOL MXHasPostEventAccess(void);
 FOUNDATION_EXPORT BOOL MXRequestPostEventAccess(void);
 FOUNDATION_EXPORT BOOL MXPostControlArrow(NSInteger keyCode);
+FOUNDATION_EXPORT BOOL MXPostHorizontalDockSwipe(
+    double progress,
+    NSInteger phase
+);
 FOUNDATION_EXPORT BOOL MXIsSecureInputEnabled(void);
 
 NS_ASSUME_NONNULL_END

@@ -34,8 +34,8 @@ final class SecureInputHardwareProbeTests: XCTestCase {
             let device = try await session.start(
                 activeMode: false,
                 eventHandler: { _ in },
-                actionHandler: { _ in
-                    XCTFail("Observation mode must not produce an action.")
+                gestureHandler: { _ in
+                    XCTFail("Observation mode must not produce a gesture.")
                 },
                 tapHandler: {
                     XCTFail("Observation mode must not produce a tap.")

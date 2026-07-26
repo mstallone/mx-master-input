@@ -61,8 +61,8 @@ final class AppModel: ObservableObject {
                             self?.handle(event)
                         }
                     },
-                    actionHandler: { [weak self] direction in
-                        MXMasterRuntime.shared.actions.perform(direction) { result in
+                    gestureHandler: { [weak self] event in
+                        MXMasterRuntime.shared.actions.performGesture(event) { result in
                             Task { @MainActor in
                                 self?.record(result)
                             }
@@ -104,6 +104,7 @@ final class AppModel: ObservableObject {
         status = "Disconnecting…"
         Task {
             await runtime.session.stop()
+            runtime.actions.cancelGestureSynchronously()
             isEnabled = false
             isBusy = false
             status = "Disabled"
@@ -170,7 +171,7 @@ final class AppModel: ObservableObject {
 
         if result.succeeded, result.secureInputWasEnabled {
             secureInputVerification =
-                "Submitted — shortcut event posted while enabled"
+                "Submitted — system event posted while enabled"
         }
     }
 }

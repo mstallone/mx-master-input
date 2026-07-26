@@ -25,12 +25,12 @@ final class MXMasterSession: @unchecked Sendable {
         qos: .userInteractive
     )
     private let pendingLock = NSLock()
-    private let recognizer: AdditiveGestureRecognizer
+    private let recognizer: ContinuousGestureRecognizer
 
     private var connection: MXHIDConnection?
     private var pendingRequest: PendingRequest?
     private var eventHandler: (@Sendable (MXMasterEvent) -> Void)?
-    private var actionHandler: (@Sendable (GestureDirection) -> Void)?
+    private var gestureHandler: (@Sendable (PanelGestureEvent) -> Void)?
     private var tapHandler: (@Sendable () -> Void)?
 
     private var deviceIndex: UInt8 = 0
@@ -46,8 +46,8 @@ final class MXMasterSession: @unchecked Sendable {
         motionActivationDelay: TimeInterval = 0.06,
         maximumTapDuration: TimeInterval = 0.4
     ) {
-        recognizer = AdditiveGestureRecognizer(
-            threshold: gestureThreshold,
+        recognizer = ContinuousGestureRecognizer(
+            activationThreshold: gestureThreshold,
             horizontalDeadZone: horizontalDeadZone,
             motionActivationDelay: motionActivationDelay,
             maximumTapDuration: maximumTapDuration
@@ -57,7 +57,7 @@ final class MXMasterSession: @unchecked Sendable {
     func start(
         activeMode: Bool,
         eventHandler: @escaping @Sendable (MXMasterEvent) -> Void,
-        actionHandler: @escaping @Sendable (GestureDirection) -> Void,
+        gestureHandler: @escaping @Sendable (PanelGestureEvent) -> Void,
         tapHandler: @escaping @Sendable () -> Void
     ) async throws -> ConnectedMXMaster {
         try await withCheckedThrowingContinuation { continuation in
@@ -72,7 +72,7 @@ final class MXMasterSession: @unchecked Sendable {
                         self.stopOnQueue()
                     }
                     self.eventHandler = eventHandler
-                    self.actionHandler = actionHandler
+                    self.gestureHandler = gestureHandler
                     self.tapHandler = tapHandler
                     let device = try self.connectOnQueue(activeMode: activeMode)
                     self.started = true
@@ -220,7 +220,9 @@ final class MXMasterSession: @unchecked Sendable {
 
         panelDiverted = false
         panelHeld = false
-        recognizer.cancel()
+        if recognizer.cancel() {
+            gestureHandler?(.cancelled)
+        }
 
         pendingLock.lock()
         let pending = pendingRequest
@@ -500,9 +502,14 @@ final class MXMasterSession: @unchecked Sendable {
                 return
             }
 
-            if let direction = recognizer.ingest(dx: dx, dy: dy) {
-                emit(.direction(direction))
-                actionHandler?(direction)
+            if let update = recognizer.ingest(dx: dx, dy: dy) {
+                emit(.direction(update.direction))
+                switch update.phase {
+                case .began:
+                    gestureHandler?(.began(dx: update.dx))
+                case .changed:
+                    gestureHandler?(.changed(dx: update.dx))
+                }
             }
             return
         }
@@ -535,7 +542,9 @@ final class MXMasterSession: @unchecked Sendable {
             panelHeld = false
             let end = recognizer.end()
             emit(.panelUp)
-            if end.isTap {
+            if end.didBeginSwipe {
+                gestureHandler?(.ended)
+            } else if end.isTap {
                 emit(.tap)
                 tapHandler?()
             }

@@ -6,6 +6,9 @@
 #import <IOKit/hid/IOHIDKeys.h>
 #import <IOKit/hid/IOHIDManager.h>
 
+#include <math.h>
+#include <string.h>
+
 static NSString *const MXHIDErrorDomain = @"com.mattstallone.mxmasterinput.hid";
 static const NSInteger MXLogitechVendorID = 0x046D;
 
@@ -581,6 +584,126 @@ BOOL MXPostControlArrow(NSInteger keyCode) {
 
     CFRelease(systemWideElement);
     return succeeded;
+}
+
+BOOL MXPostHorizontalDockSwipe(double progress, NSInteger phase) {
+    if (@available(macOS 27.0, *)) {
+        // macOS 27 moved DockSwipe state into an attached IOHIDEvent. Falling
+        // back is safer than posting the obsolete field layout.
+        return NO;
+    }
+
+    // These are IOHIDEventPhaseBits values. They are public as AppKit gesture
+    // phases but the DockSwipe event fields below are private.
+    switch (phase) {
+        case 1: // began
+        case 2: // changed
+        case 4: // ended
+        case 8: // cancelled
+            break;
+        default:
+            return NO;
+    }
+
+    if (!CGPreflightPostEventAccess() || !isfinite(progress)) {
+        return NO;
+    }
+
+    CGEventRef gestureEvent = CGEventCreate(NULL);
+    CGEventRef dockEvent = CGEventCreate(NULL);
+    if (!gestureEvent || !dockEvent) {
+        if (gestureEvent) {
+            CFRelease(gestureEvent);
+        }
+        if (dockEvent) {
+            CFRelease(dockEvent);
+        }
+        return NO;
+    }
+
+    // Private DockSwipe field layout for macOS 26. This mapping was
+    // independently verified against the active Space ID on 25F84 and was
+    // informed by Mac Mouse Fix's published reverse engineering.
+    CGEventSetDoubleValueField(
+        gestureEvent,
+        (CGEventField)55,
+        29 // NSEventTypeGesture
+    );
+    CGEventSetDoubleValueField(
+        gestureEvent,
+        (CGEventField)41,
+        33231
+    );
+
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)55,
+        30 // NSEventTypeMagnify
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)110,
+        23 // kIOHIDEventTypeDockSwipe
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)132,
+        phase
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)134,
+        phase
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)124,
+        progress
+    );
+
+    Float32 progress32 = (Float32)progress;
+    uint32_t progressBits = 0;
+    memcpy(&progressBits, &progress32, sizeof(progress32));
+    CGEventSetIntegerValueField(
+        dockEvent,
+        (CGEventField)135,
+        (int64_t)progressBits
+    );
+
+    // Bit-pattern representation of horizontal DockSwipe motion.
+    const double horizontalMotion = 1.401298464324817e-45;
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)119,
+        horizontalMotion
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)139,
+        horizontalMotion
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)123,
+        1
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
+        (CGEventField)165,
+        1
+    );
+    CGEventSetIntegerValueField(
+        dockEvent,
+        (CGEventField)136,
+        0
+    );
+
+    CGEventPost(kCGSessionEventTap, dockEvent);
+    CGEventPost(kCGSessionEventTap, gestureEvent);
+
+    CFRelease(dockEvent);
+    CFRelease(gestureEvent);
+    return YES;
 }
 
 BOOL MXIsSecureInputEnabled(void) {

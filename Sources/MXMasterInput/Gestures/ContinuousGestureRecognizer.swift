@@ -19,24 +19,46 @@ enum GestureDirection: String, CaseIterable, Equatable, Sendable {
     }
 }
 
+enum ContinuousGesturePhase: Equatable, Sendable {
+    case began
+    case changed
+}
+
+enum PanelGestureEvent: Equatable, Sendable {
+    case began(dx: Int)
+    case changed(dx: Int)
+    case ended
+    case cancelled
+}
+
+struct ContinuousGestureUpdate: Equatable, Sendable {
+    let phase: ContinuousGesturePhase
+    let dx: Int
+    let dy: Int
+
+    var direction: GestureDirection {
+        dx < 0 ? .left : .right
+    }
+}
+
 struct GestureEnd: Equatable, Sendable {
-    let committedDirections: [GestureDirection]
+    let didBeginSwipe: Bool
     let isTap: Bool
 }
 
-/// Recognizes multiple ordered gestures during one held-panel session.
+/// Converts one held-panel session into one continuous horizontal gesture.
 ///
-/// A commit resets the displacement origin. That is the important difference
-/// from a one-shot recognizer: left followed by right emits `[.left, .right]`
-/// before the panel is released.
-final class AdditiveGestureRecognizer {
-    let threshold: Double
+/// Motion is buffered until it clears the radial activation threshold and the
+/// horizontal dead zone. The first update contains the buffered displacement;
+/// subsequent updates preserve every horizontal reversal until release.
+final class ContinuousGestureRecognizer {
+    let activationThreshold: Double
     let horizontalDeadZone: Double
     let motionActivationDelay: TimeInterval
     let maximumTapDuration: TimeInterval
 
     private(set) var isTracking = false
-    private(set) var committedDirections: [GestureDirection] = []
+    private(set) var didBeginSwipe = false
 
     private let now: () -> TimeInterval
     private var accumulatedX = 0.0
@@ -45,10 +67,9 @@ final class AdditiveGestureRecognizer {
     private var maximumHorizontalPressDisplacement = 0.0
     private var beganAt = 0.0
     private var acceptsMotionAt = 0.0
-    private var isAwaitingReversal = false
 
     init(
-        threshold: Double = 30,
+        activationThreshold: Double = 30,
         horizontalDeadZone: Double = 12,
         motionActivationDelay: TimeInterval = 0,
         maximumTapDuration: TimeInterval = 0.4,
@@ -56,12 +77,12 @@ final class AdditiveGestureRecognizer {
             ProcessInfo.processInfo.systemUptime
         }
     ) {
-        precondition(threshold > 0)
+        precondition(activationThreshold > 0)
         precondition(horizontalDeadZone > 0)
-        precondition(horizontalDeadZone < threshold)
+        precondition(horizontalDeadZone < activationThreshold)
         precondition(motionActivationDelay >= 0)
         precondition(maximumTapDuration > 0)
-        self.threshold = threshold
+        self.activationThreshold = activationThreshold
         self.horizontalDeadZone = horizontalDeadZone
         self.motionActivationDelay = motionActivationDelay
         self.maximumTapDuration = maximumTapDuration
@@ -70,17 +91,17 @@ final class AdditiveGestureRecognizer {
 
     func begin() {
         isTracking = true
-        committedDirections.removeAll(keepingCapacity: true)
-        resetDisplacement()
+        didBeginSwipe = false
+        accumulatedX = 0
+        accumulatedY = 0
         pressDisplacementX = 0
         maximumHorizontalPressDisplacement = 0
         beganAt = now()
         acceptsMotionAt = beganAt + motionActivationDelay
-        isAwaitingReversal = false
     }
 
     @discardableResult
-    func ingest(dx: Int, dy: Int) -> GestureDirection? {
+    func ingest(dx: Int, dy: Int) -> ContinuousGestureUpdate? {
         guard isTracking else {
             return nil
         }
@@ -92,74 +113,63 @@ final class AdditiveGestureRecognizer {
             return nil
         }
 
-        if isAwaitingReversal, let previousDirection = committedDirections.last {
-            let isReversing = switch previousDirection {
-            case .left: dx > 0
-            case .right: dx < 0
-            }
-            guard isReversing else {
-                return nil
-            }
-            isAwaitingReversal = false
-        }
-
-        accumulatedX += Double(dx)
-        accumulatedY += Double(dy)
         pressDisplacementX += Double(dx)
         maximumHorizontalPressDisplacement = max(
             maximumHorizontalPressDisplacement,
             abs(pressDisplacementX)
         )
 
-        // Once the stroke crosses the radial threshold, its horizontal sign
-        // selects the Space. Vertical drift never disqualifies a gesture:
-        // every direction in the right hemisphere is right, and every
-        // direction in the left hemisphere is left. The central horizontal
-        // dead zone filters the near-vertical RawXY pulse produced by clicking
-        // the panel itself.
-        guard hypot(accumulatedX, accumulatedY) >= threshold,
+        if didBeginSwipe {
+            guard dx != 0 else {
+                return nil
+            }
+            return ContinuousGestureUpdate(
+                phase: .changed,
+                dx: dx,
+                dy: dy
+            )
+        }
+
+        accumulatedX += Double(dx)
+        accumulatedY += Double(dy)
+
+        // Vertical drift never disqualifies a gesture, but the horizontal dead
+        // zone filters the near-vertical RawXY pulse caused by clicking.
+        guard hypot(accumulatedX, accumulatedY) >= activationThreshold,
               abs(accumulatedX) >= horizontalDeadZone else {
             return nil
         }
-        let direction: GestureDirection = accumulatedX < 0 ? .left : .right
 
-        // Every threshold crossing establishes a fresh origin. Ignore
-        // continued travel in that direction until the first opposite delta,
-        // so leftover motion cannot make the next reversal cross extra
-        // distance before it commits.
-        resetDisplacement()
-        isAwaitingReversal = true
-
-        guard committedDirections.last != direction else {
-            return nil
-        }
-
-        committedDirections.append(direction)
-        return direction
+        didBeginSwipe = true
+        return ContinuousGestureUpdate(
+            phase: .began,
+            dx: Int(accumulatedX),
+            dy: Int(accumulatedY)
+        )
     }
 
     func end() -> GestureEnd {
         let pressDuration = max(0, now() - beganAt)
         let result = GestureEnd(
-            committedDirections: committedDirections,
-            isTap: committedDirections.isEmpty
+            didBeginSwipe: didBeginSwipe,
+            isTap: !didBeginSwipe
                 && maximumHorizontalPressDisplacement < horizontalDeadZone
                 && pressDuration <= maximumTapDuration
         )
         isTracking = false
-        resetDisplacement()
+        didBeginSwipe = false
+        accumulatedX = 0
+        accumulatedY = 0
         return result
     }
 
-    func cancel() {
+    @discardableResult
+    func cancel() -> Bool {
+        let cancelledActiveSwipe = didBeginSwipe
         isTracking = false
-        committedDirections.removeAll(keepingCapacity: true)
-        isAwaitingReversal = false
-        resetDisplacement()
-    }
-
-    private func resetDisplacement() {
+        didBeginSwipe = false
         accumulatedX = 0
         accumulatedY = 0
+        return cancelledActiveSwipe
     }
 }
