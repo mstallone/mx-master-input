@@ -28,10 +28,8 @@ choosing a Space. A short click that stays inside that dead zone opens Mission
 Control. RawXY reports received during a 60-millisecond post-press arming window
 are discarded so movement queued before the press cannot trigger a Space
 change. After each committed direction, continued travel that way is ignored
-until reversal begins. Space shortcuts are queued 1.2 seconds apart so
-rapid left-right alternation is preserved while macOS finishes each Space
-animation. Mission Control clicks bypass that Space queue and post immediately
-when the panel is released.
+until reversal begins. Every committed direction posts its Space shortcut
+immediately. Mission Control also posts immediately when the panel is released.
 
 The haptic engine is turned off before the panel is diverted. Activation fails
 closed if the MX Master 4 does not confirm the haptic command or the Sense Panel

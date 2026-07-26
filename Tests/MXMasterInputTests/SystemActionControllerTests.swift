@@ -38,18 +38,11 @@ private final class PostedActionRecorder: @unchecked Sendable {
 }
 
 final class SystemActionControllerTests: XCTestCase {
-    func testProductionCadenceExceedsMeasuredSpaceAnimation() {
-        let controller = SystemActionController()
-
-        XCTAssertEqual(controller.minimumSpaceActionInterval, 1.2)
-    }
-
-    func testRapidAlternatingActionsArePostedInOrderAndPaced() {
+    func testRapidAlternatingActionsArePostedImmediatelyInOrder() throws {
         let recorder = PostedActionRecorder()
         let completion = expectation(description: "All actions complete")
         completion.expectedFulfillmentCount = 6
         let controller = SystemActionController(
-            minimumSpaceActionInterval: 0.02,
             postControlArrow: { keyCode in
                 recorder.post(keyCode: keyCode)
             }
@@ -87,21 +80,16 @@ final class SystemActionControllerTests: XCTestCase {
                 .previousSpace,
             ]
         )
-
-        for (first, second) in zip(
-            snapshot.entries,
-            snapshot.entries.dropFirst()
-        ) {
-            XCTAssertGreaterThanOrEqual(second.time - first.time, 0.015)
-        }
+        let firstEntry = try XCTUnwrap(snapshot.entries.first)
+        let lastEntry = try XCTUnwrap(snapshot.entries.last)
+        XCTAssertLessThan(lastEntry.time - firstEntry.time, 0.15)
     }
 
-    func testMissionControlBypassesPendingSpaceAction() {
+    func testMissionControlPostsImmediatelyAfterSpaceActions() throws {
         let recorder = PostedActionRecorder()
         let completion = expectation(description: "All actions complete")
         completion.expectedFulfillmentCount = 3
         let controller = SystemActionController(
-            minimumSpaceActionInterval: 0.2,
             postControlArrow: { keyCode in
                 recorder.post(keyCode: keyCode)
             }
@@ -123,18 +111,13 @@ final class SystemActionControllerTests: XCTestCase {
         wait(for: [completion], timeout: 2)
         let snapshot = recorder.snapshot()
 
-        XCTAssertEqual(snapshot.entries.map(\.keyCode), [124, 126, 123])
+        XCTAssertEqual(snapshot.entries.map(\.keyCode), [124, 123, 126])
         XCTAssertEqual(
             snapshot.actions,
-            [.nextSpace, .missionControl, .previousSpace]
+            [.nextSpace, .previousSpace, .missionControl]
         )
-        XCTAssertLessThan(
-            snapshot.entries[1].time - snapshot.entries[0].time,
-            0.15
-        )
-        XCTAssertGreaterThanOrEqual(
-            snapshot.entries[2].time - snapshot.entries[0].time,
-            0.19
-        )
+        let firstEntry = try XCTUnwrap(snapshot.entries.first)
+        let lastEntry = try XCTUnwrap(snapshot.entries.last)
+        XCTAssertLessThan(lastEntry.time - firstEntry.time, 0.15)
     }
 }

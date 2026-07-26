@@ -7,7 +7,7 @@ With the insertion point in the field, test the MX Master Sense Panel:
 • Short click — Mission Control
 • Hold and move left — next/right Space
 • Hold and move right — previous/left Space
-• Hold and alternate directions — actions should remain queued
+• Hold and alternate directions — each reversal should post immediately
 
 Mission Control or a Space change may take focus away. Return to this dialog and refocus the hidden field before each separate test.
 

@@ -65,8 +65,8 @@ struct ContentView: View {
                 Text(
                     "Any movement into the left or right half-plane changes "
                     + "Spaces in that direction. A central dead zone filters "
-                    + "click pressure. Rapid reversals are queued while Space "
-                    + "animations settle. A short click opens Mission Control."
+                    + "click pressure. Actions post immediately. A short click "
+                    + "opens Mission Control."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
