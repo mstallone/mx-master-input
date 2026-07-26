@@ -3,107 +3,70 @@
 **First-party-feeling, Apple-native gestures on a Logitech MX Master.**
 
 MX Master Input brings the progressive Space-switching experience of Apple's
-Magic Trackpad to the MX Master 4 Sense Panel. The desktop stays attached to
-your movement, responds when you reverse direction, and commits or snaps back
-when you release—just like a native macOS gesture.
+Magic Trackpad to the MX Master 4 Sense Panel. The desktop follows your
+movement, responds when you reverse direction, and commits or snaps back when
+you release—just like a native macOS gesture.
 
-This is not conventional mouse-button remapping. The app reads Logitech HID++
-reports directly and drives the phased system gesture understood by Dock, so
-the interaction is continuous rather than a keyboard shortcut followed by an
-uninterruptible animation. It does not require Logi Options+.
+Unlike conventional mouse-button remapping, this is not a gesture translated
+into a one-shot keyboard shortcut. The app reads the Sense Panel directly over
+Logitech HID++ and drives one continuous, phased system gesture.
 
-## Why this matters
+## Why it feels native
 
-Most mouse gesture utilities can only turn a gesture into a one-shot action
-such as Control-Left or Control-Right. That asks macOS to start a Space
-transition, but the mouse no longer controls what happens next: the animation
-runs by itself, quick reversals are dropped, and the result feels like a
-shortcut.
+A Control-arrow shortcut tells macOS where to go and leaves the animation to
+finish by itself. A trackpad gesture keeps you in control throughout the
+transition: you can slow down, stop, reverse, commit, or cancel before
+releasing.
 
-Apple's trackpad experience is different because it sends one continuous,
-phased gesture to the window system. The current Space moves with your hand.
-You can slow down, stop, reverse, commit, or cancel before lifting your fingers.
-That direct manipulation—not merely triggering the same destination—is what
-makes the interaction feel first-party.
+MX Master Input gives the Sense Panel that same direct-manipulation model:
 
-MX Master Input gives the Sense Panel that same interaction model:
-
-- progressive, analog control of the Space transition
-- immediate reversals within the active gesture
+- progressive control of the Space transition
+- immediate reversals during the active gesture
 - natural release behavior that commits or snaps back
 - a simple click for Mission Control
-- direct HID++ input that continues to work while Secure Input is enabled
 
-The result is an MX Master that participates in macOS gestures as an input
-surface, instead of impersonating one with a sequence of keystrokes.
+## Requirements
 
-Version 0.1.0 is pinned to:
+- Logitech MX Master 4 connected through the Logi Bolt receiver
+  (`0x046D:0xC548`)
+- Apple silicon Mac running macOS 26.5.2 (`25F84`)
+- Accessibility permission for posting system actions
 
-- macOS 26.5.2 (25F84), Apple silicon
-- MX Master 4 through Logi Bolt receiver `0x046D:0xC548`
-- Xcode 26.6 / Swift 6.3
-- protocol and platform research date: 2026-07-26
+Version 0.1.0 is validated with Xcode 26.6 and Swift 6.3.
 
-## Mapping
+## Controls
 
 | Sense Panel input | Action |
 | --- | --- |
-| Tap | Control-Up — Mission Control |
-| Hold and drag left | Continuous system swipe — Next Space |
-| Hold and drag right | Continuous system swipe — Previous Space |
+| Tap | Mission Control |
+| Hold and drag left | Next Space |
+| Hold and drag right | Previous Space |
 
-The Space mapping is reversed: every movement direction in the left half-plane
-reveals the next Space, and every movement direction in the right half-plane
-reveals the previous Space. Once the motion crosses the activation threshold,
-the app begins one phased Dock swipe. Every subsequent RawXY sample updates its
-progress, so the desktop follows the mouse and reversals modify the same active
-gesture. Releasing the panel ends the stream and lets Dock commit the Space or
-snap back. There is no action queue or intentional animation delay.
+The Space mapping is intentionally reversed so the desktop tracks the physical
+motion naturally. A central dead zone filters the small movement caused by
+pressing the panel. Once a swipe begins, vertical drift is ignored and every
+horizontal movement updates the same active gesture.
 
-Vertical drift does not disqualify a gesture. A narrow horizontal dead zone
-prevents the RawXY pulse caused by pressing the panel from beginning a swipe. A
-short click that stays inside that dead zone opens Mission Control. RawXY
-reports received during a 60-millisecond post-press arming window are discarded
-so movement queued before the press cannot cross into the new gesture.
+Mission Control and the compatibility fallback use the Control-arrow shortcuts
+configured in macOS Keyboard settings.
 
-The haptic engine is turned off before the panel is diverted. Activation fails
-closed if the MX Master 4 does not confirm the haptic command or the Sense Panel
-diversion.
+## Build and run
 
-## Progressive Space gesture implementation
-
-macOS does not publish an API for injecting the progressive gesture consumed by
-Dock. On macOS 26, MX Master Input emits the private `DockSwipe` event shape
-used by the native gesture pipeline: a cumulative horizontal progress value
-accompanied by `began`, `changed`, `ended`, and `cancelled` phases. Unlike
-posting Control-arrow repeatedly, each RawXY report updates the gesture already
-in progress. This path was verified on build 25F84 in both directions and by
-retargeting a transition while its settling animation was still active.
-
-The private event-field layout is inherently OS-version-sensitive. The app does
-not use it on macOS 27, where the representation changed; it falls back to the
-standard Accessibility-posted Control-arrow action instead. Every active
-synthetic swipe is cancelled before a replacement begins, when the device
-session stops, and when the app terminates.
-
-The DockSwipe field mapping was informed by the reverse engineering published
-in [Mac Mouse Fix](https://github.com/noah-nuebling/mac-mouse-fix), under the
-[MMF License](https://github.com/noah-nuebling/mac-mouse-fix/blob/master/License).
-
-## Permissions and Secure Input
-
-The app requires Accessibility/Post Event permission to submit Mission Control
-and Space actions. It reads the Sense Panel directly from Logitech's HID++
-collection, so physical gesture detection continues while macOS Secure Event
-Input is enabled. The Settings window reports both permission and Secure Input
-status.
-
-## Build and tests
-
-The Xcode project is generated from `project.yml`:
+The Xcode project is generated from `project.yml` using
+[XcodeGen](https://github.com/yonaskolb/XcodeGen):
 
 ```sh
 xcodegen generate
+open MXMasterInput.xcodeproj
+```
+
+Select your development team in Xcode, run the `MXMasterInput` scheme, grant
+Accessibility permission when prompted, and select **Enable** from the menu-bar
+app.
+
+To run the automated tests:
+
+```sh
 xcodebuild \
   -project MXMasterInput.xcodeproj \
   -scheme MXMasterInput \
@@ -114,50 +77,26 @@ xcodebuild \
   build test
 ```
 
-The normal tests are unhosted. They cannot launch the menu-bar app and do not
-open the mouse or post system input.
+## How it works
 
-An opt-in, input-only hardware probe can prove that the awake MX Master 4
-responds over HID++ while the probe process itself has Secure Input enabled:
+MX Master Input reads Logitech's vendor-defined HID++ reports directly and
+converts Sense Panel motion into the private `DockSwipe` event consumed by the
+native macOS gesture pipeline. A single stream carries `began`, `changed`,
+`ended`, and `cancelled` phases, allowing reversals to modify the transition
+already in progress.
 
-```sh
-MXMASTER_RUN_HARDWARE_PROBE=1 \
-  xcrun xctest \
-  DerivedData/Build/Products/Debug/MXMasterInputTests.xctest
-```
+macOS does not publish an API for injecting this progressive gesture, so the
+event format is inherently OS-version-sensitive. The current implementation is
+validated on macOS 26.5.2. It disables the private path on macOS 27 and falls
+back to standard Control-arrow actions.
 
-This probe runs the device session in observation mode. It does not divert the
-panel, change haptic state, or post a system event.
+Direct HID++ input continues while Secure Event Input is enabled. Accessibility
+permission is still required to submit Mission Control and Space actions. Logi
+Options+ is not required.
 
-## Manual Secure Input gesture test
+The `DockSwipe` field mapping was informed by the reverse engineering published
+in [Mac Mouse Fix](https://github.com/noah-nuebling/mac-mouse-fix), under the
+[MMF License](https://github.com/noah-nuebling/mac-mouse-fix/blob/master/License).
 
-Run the included AppleScript to open a focused hidden-answer field, which
-enables macOS Secure Event Input:
-
-```sh
-osascript Scripts/SecureInputGestureTest.applescript
-```
-
-Keep the insertion point in the hidden field while trying a Sense Panel
-gesture. Mission Control or a Space change may remove focus, so return to the
-dialog and refocus the field before each separate test. The dialog closes after
-10 minutes if `Finish` is not selected.
-
-## End-to-end verification
-
-1. Wake the MX Master 4.
-2. Open MX Master Input and grant Accessibility/Post Event access.
-3. Select Enable. Confirm `Haptic engine: Off`.
-4. Enable Secure Input using a password field or Secure Keyboard Entry in a
-   terminal.
-5. Confirm the app shows `Secure Input: Enabled`.
-6. Click and release the Sense Panel without holding. Confirm Mission Control
-   opens.
-7. Hold the Sense Panel and drag left. Confirm the current desktop follows the
-   mouse progressively; reverse before releasing and confirm it follows back.
-8. Drag far enough left and release to commit the next Space. Repeat to the
-   right to return to the previous Space.
-9. Confirm `Runtime verification` reads Submitted.
-
-Mission Control and the compatibility fallback follow the Control-arrow
-shortcuts configured in macOS Keyboard settings.
+MX Master Input is an independent project and is not affiliated with Apple or
+Logitech.
