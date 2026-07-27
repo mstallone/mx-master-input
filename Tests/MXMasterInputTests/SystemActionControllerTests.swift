@@ -3,6 +3,7 @@ import XCTest
 
 private final class PostedActionRecorder: @unchecked Sendable {
     struct DockEntry {
+        let axis: GestureAxis
         let progress: Double
         let phase: Int
         let time: TimeInterval
@@ -13,10 +14,15 @@ private final class PostedActionRecorder: @unchecked Sendable {
     private var storedKeyCodes: [Int] = []
     var dockResult = true
 
-    func postDock(progress: Double, phase: Int) -> Bool {
+    func postDock(
+        axis: GestureAxis,
+        progress: Double,
+        phase: Int
+    ) -> Bool {
         lock.lock()
         storedDockEntries.append(
             DockEntry(
+                axis: axis,
                 progress: progress,
                 phase: phase,
                 time: ProcessInfo.processInfo.systemUptime
@@ -48,13 +54,15 @@ final class SystemActionControllerTests: XCTestCase {
         let completion = expectation(description: "Gesture completes")
         let controller = makeController(recorder: recorder)
 
-        controller.performGesture(.began(dx: -30)) { _ in
+        controller.performGesture(
+            .began(axis: .horizontal, delta: -30)
+        ) { _ in
             XCTFail("Began must not complete the action")
         }
-        controller.performGesture(.changed(dx: -100)) { _ in
+        controller.performGesture(.changed(delta: -100)) { _ in
             XCTFail("Changed must not complete the action")
         }
-        controller.performGesture(.changed(dx: 80)) { _ in
+        controller.performGesture(.changed(delta: 80)) { _ in
             XCTFail("Changed must not complete the action")
         }
         controller.performGesture(.ended) { result in
@@ -67,6 +75,12 @@ final class SystemActionControllerTests: XCTestCase {
         let entries = recorder.snapshot().dock
 
         XCTAssertEqual(entries.map(\.phase), [1, 2, 2, 4])
+        XCTAssertEqual(entries.map(\.axis), [
+            .horizontal,
+            .horizontal,
+            .horizontal,
+            .horizontal,
+        ])
         XCTAssertEqual(entries[0].progress, 0.072, accuracy: 0.000_001)
         XCTAssertEqual(entries[1].progress, 0.312, accuracy: 0.000_001)
         XCTAssertEqual(entries[2].progress, 0.12, accuracy: 0.000_001)
@@ -78,9 +92,11 @@ final class SystemActionControllerTests: XCTestCase {
         let completion = expectation(description: "Gesture completes")
         let controller = makeController(recorder: recorder)
 
-        controller.performGesture(.began(dx: -30)) { _ in }
+        controller.performGesture(
+            .began(axis: .horizontal, delta: -30)
+        ) { _ in }
         for dx in [100, -100, 100, -100, 100, -100] {
-            controller.performGesture(.changed(dx: dx)) { _ in }
+            controller.performGesture(.changed(delta: dx)) { _ in }
         }
         controller.performGesture(.ended) { _ in
             completion.fulfill()
@@ -95,12 +111,45 @@ final class SystemActionControllerTests: XCTestCase {
         XCTAssertLessThan(last.time - first.time, 0.15)
     }
 
+    func testOppositeSequentialSwipesRestartWithIndependentDirection() {
+        let recorder = PostedActionRecorder()
+        let firstCompletion = expectation(description: "First gesture completes")
+        let secondCompletion = expectation(
+            description: "Second gesture completes"
+        )
+        let controller = makeController(recorder: recorder)
+
+        controller.performGesture(
+            .began(axis: .horizontal, delta: -100)
+        ) { _ in }
+        controller.performGesture(.ended) { _ in
+            firstCompletion.fulfill()
+        }
+        controller.performGesture(
+            .began(axis: .horizontal, delta: 100)
+        ) { _ in }
+        controller.performGesture(.ended) { _ in
+            secondCompletion.fulfill()
+        }
+
+        wait(for: [firstCompletion, secondCompletion], timeout: 2)
+        let entries = recorder.snapshot().dock
+
+        XCTAssertEqual(entries.map(\.phase), [1, 4, 1, 4])
+        XCTAssertEqual(entries[0].progress, 0.24, accuracy: 0.000_001)
+        XCTAssertEqual(entries[1].progress, 0.24, accuracy: 0.000_001)
+        XCTAssertEqual(entries[2].progress, -0.24, accuracy: 0.000_001)
+        XCTAssertEqual(entries[3].progress, -0.24, accuracy: 0.000_001)
+    }
+
     func testCancellationAlwaysClosesActiveDockSwipe() {
         let recorder = PostedActionRecorder()
         let controller = makeController(recorder: recorder)
 
-        controller.performGesture(.began(dx: 40)) { _ in }
-        controller.performGesture(.changed(dx: -10)) { _ in }
+        controller.performGesture(
+            .began(axis: .horizontal, delta: 40)
+        ) { _ in }
+        controller.performGesture(.changed(delta: -10)) { _ in }
         controller.performGesture(.cancelled) { _ in
             XCTFail("Cancellation must not report an action")
         }
@@ -115,14 +164,22 @@ final class SystemActionControllerTests: XCTestCase {
         let recorder = PostedActionRecorder()
         let controller = makeController(recorder: recorder)
 
-        controller.performGesture(.began(dx: -30)) { _ in }
-        controller.performGesture(.began(dx: 30)) { _ in }
+        controller.performGesture(
+            .began(axis: .horizontal, delta: -30)
+        ) { _ in }
+        controller.performGesture(
+            .began(axis: .vertical, delta: -30)
+        ) { _ in }
         controller.cancelGestureSynchronously()
 
-        XCTAssertEqual(
-            recorder.snapshot().dock.map(\.phase),
-            [1, 8, 1, 8]
-        )
+        let entries = recorder.snapshot().dock
+        XCTAssertEqual(entries.map(\.axis), [
+            .horizontal,
+            .horizontal,
+            .vertical,
+            .vertical,
+        ])
+        XCTAssertEqual(entries.map(\.phase), [1, 8, 1, 8])
     }
 
     func testKeyboardFallbackRunsOnlyWhenPrivateBeginFails() {
@@ -131,8 +188,10 @@ final class SystemActionControllerTests: XCTestCase {
         let completion = expectation(description: "Fallback completes")
         let controller = makeController(recorder: recorder)
 
-        controller.performGesture(.began(dx: -30)) { _ in }
-        controller.performGesture(.changed(dx: 100)) { _ in }
+        controller.performGesture(
+            .began(axis: .horizontal, delta: -30)
+        ) { _ in }
+        controller.performGesture(.changed(delta: 100)) { _ in }
         controller.performGesture(.ended) { result in
             XCTAssertEqual(result.action, .previousSpace)
             XCTAssertTrue(result.succeeded)
@@ -143,6 +202,100 @@ final class SystemActionControllerTests: XCTestCase {
         let snapshot = recorder.snapshot()
         XCTAssertEqual(snapshot.dock.map(\.phase), [1])
         XCTAssertEqual(snapshot.keys, [123])
+    }
+
+    func testUpwardMotionPostsContinuousVerticalMissionControlSwipe() {
+        let recorder = PostedActionRecorder()
+        let completion = expectation(description: "Gesture completes")
+        let controller = makeController(recorder: recorder)
+
+        controller.performGesture(
+            .began(axis: .vertical, delta: -30)
+        ) { _ in
+            XCTFail("Began must not complete the action")
+        }
+        controller.performGesture(.changed(delta: -100)) { _ in
+            XCTFail("Changed must not complete the action")
+        }
+        controller.performGesture(.changed(delta: 80)) { _ in
+            XCTFail("Changed must not complete the action")
+        }
+        controller.performGesture(.ended) { result in
+            XCTAssertEqual(result.action, .missionControl)
+            XCTAssertTrue(result.succeeded)
+            completion.fulfill()
+        }
+
+        wait(for: [completion], timeout: 2)
+        let entries = recorder.snapshot().dock
+
+        XCTAssertEqual(entries.map(\.axis), [
+            .vertical,
+            .vertical,
+            .vertical,
+            .vertical,
+        ])
+        XCTAssertEqual(entries.map(\.phase), [1, 2, 2, 4])
+        XCTAssertEqual(entries[0].progress, -0.072, accuracy: 0.000_001)
+        XCTAssertEqual(entries[1].progress, -0.312, accuracy: 0.000_001)
+        XCTAssertEqual(entries[2].progress, -0.12, accuracy: 0.000_001)
+        XCTAssertEqual(entries[3].progress, -0.12, accuracy: 0.000_001)
+    }
+
+    func testDownwardMotionPostsContinuousVerticalMissionControlSwipe() {
+        let recorder = PostedActionRecorder()
+        let completion = expectation(description: "Gesture completes")
+        let controller = makeController(recorder: recorder)
+
+        controller.performGesture(
+            .began(axis: .vertical, delta: 45)
+        ) { _ in
+            XCTFail("Began must not complete the action")
+        }
+        controller.performGesture(.changed(delta: 100)) { _ in
+            XCTFail("Changed must not complete the action")
+        }
+        controller.performGesture(.ended) { result in
+            XCTAssertEqual(result.action, .missionControl)
+            XCTAssertTrue(result.succeeded)
+            completion.fulfill()
+        }
+
+        wait(for: [completion], timeout: 2)
+        let entries = recorder.snapshot().dock
+
+        XCTAssertEqual(entries.map(\.axis), [
+            .vertical,
+            .vertical,
+            .vertical,
+        ])
+        XCTAssertEqual(entries.map(\.phase), [1, 2, 4])
+        XCTAssertEqual(entries[0].progress, 0.108, accuracy: 0.000_001)
+        XCTAssertEqual(entries[1].progress, 0.348, accuracy: 0.000_001)
+        XCTAssertEqual(entries[2].progress, 0.348, accuracy: 0.000_001)
+    }
+
+    func testVerticalGestureFallsBackToMissionControlShortcut() {
+        let recorder = PostedActionRecorder()
+        recorder.dockResult = false
+        let completion = expectation(description: "Fallback completes")
+        let controller = makeController(recorder: recorder)
+
+        controller.performGesture(
+            .began(axis: .vertical, delta: -30)
+        ) { _ in }
+        controller.performGesture(.changed(delta: 100)) { _ in }
+        controller.performGesture(.ended) { result in
+            XCTAssertEqual(result.action, .missionControl)
+            XCTAssertTrue(result.succeeded)
+            completion.fulfill()
+        }
+
+        wait(for: [completion], timeout: 2)
+        let snapshot = recorder.snapshot()
+        XCTAssertEqual(snapshot.dock.map(\.axis), [.vertical])
+        XCTAssertEqual(snapshot.dock.map(\.phase), [1])
+        XCTAssertEqual(snapshot.keys, [126])
     }
 
     func testMissionControlTapStillUsesImmediateAccessibilityShortcut() {
@@ -165,11 +318,16 @@ final class SystemActionControllerTests: XCTestCase {
     ) -> SystemActionController {
         SystemActionController(
             rawMotionUnitsPerSpace: 500,
+            rawMotionUnitsPerMissionControl: 500,
             postControlArrow: { keyCode in
                 recorder.postKey(keyCode: keyCode)
             },
-            postDockSwipe: { progress, phase in
-                recorder.postDock(progress: progress, phase: phase)
+            postDockSwipe: { axis, progress, phase in
+                recorder.postDock(
+                    axis: axis,
+                    progress: progress,
+                    phase: phase
+                )
             }
         )
     }

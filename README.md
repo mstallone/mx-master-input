@@ -2,10 +2,10 @@
 
 **First-party-feeling, Apple-native gestures on a Logitech MX Master.**
 
-MX Master Input brings the progressive Space-switching experience of Apple's
-Magic Trackpad to the MX Master 4 Sense Panel. The desktop follows your
-movement, responds when you reverse direction, and commits or snaps back when
-you release—just like a native macOS gesture.
+MX Master Input brings the progressive Mission Control and Space-switching
+experience of Apple's Magic Trackpad to the MX Master 4 Sense Panel. The
+desktop follows your movement, responds when you reverse direction, and
+commits or snaps back when you release—just like a native macOS gesture.
 
 Unlike conventional mouse-button remapping, this is not a gesture translated
 into a one-shot keyboard shortcut. The app reads the Sense Panel directly over
@@ -20,10 +20,11 @@ releasing.
 
 MX Master Input gives the Sense Panel that same direct-manipulation model:
 
-- progressive control of the Space transition
+- progressive control of Mission Control and Space transitions
 - immediate reversals during the active gesture
 - natural release behavior that commits or snaps back
-- a simple click for Mission Control
+- an upward drag or simple click to open Mission Control, and a downward drag
+  to close it
 
 ## Requirements
 
@@ -39,16 +40,19 @@ Version 0.1.0 is validated with Xcode 26.6 and Swift 6.3.
 | Sense Panel input | Action |
 | --- | --- |
 | Tap | Mission Control |
+| Hold and drag up | Mission Control |
+| Hold and drag down | Close Mission Control when it is open |
 | Hold and drag left | Next Space |
 | Hold and drag right | Previous Space |
 
 The Space mapping is intentionally reversed so the desktop tracks the physical
 motion naturally. A central dead zone filters the small movement caused by
-pressing the panel. Once a swipe begins, vertical drift is ignored and every
-horizontal movement updates the same active gesture.
+pressing the panel. Once a swipe begins, its horizontal or vertical axis is
+locked and every movement or reversal on that axis updates the same active
+gesture.
 
-Mission Control and the compatibility fallback use the Control-arrow shortcuts
-configured in macOS Keyboard settings.
+Mission Control taps and the compatibility fallback use the Control-arrow
+shortcuts configured in macOS Keyboard settings.
 
 ## Build and run
 
@@ -98,10 +102,10 @@ tag:
 ## How it works
 
 MX Master Input reads Logitech's vendor-defined HID++ reports directly and
-converts Sense Panel motion into the private `DockSwipe` event consumed by the
-native macOS gesture pipeline. A single stream carries `began`, `changed`,
-`ended`, and `cancelled` phases, allowing reversals to modify the transition
-already in progress.
+converts horizontal and vertical Sense Panel motion into the private
+`DockSwipe` event consumed by the native macOS gesture pipeline. A single
+stream carries `began`, `changed`, `ended`, and `cancelled` phases, allowing
+reversals to modify the transition already in progress.
 
 macOS does not publish an API for injecting this progressive gesture, so the
 event format is inherently OS-version-sensitive. The current implementation is

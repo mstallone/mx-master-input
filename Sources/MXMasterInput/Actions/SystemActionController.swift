@@ -26,11 +26,13 @@ final class SystemActionController: @unchecked Sendable {
         qos: .userInteractive
     )
     let rawMotionUnitsPerSpace: Double
+    let rawMotionUnitsPerMissionControl: Double
     private let postControlArrow: @Sendable (Int) -> Bool
     private let postDockSwipe:
-        @Sendable (_ progress: Double, _ phase: Int) -> Bool
+        @Sendable (_ axis: GestureAxis, _ progress: Double, _ phase: Int) -> Bool
 
     private var swipeActive = false
+    private var swipeAxis: GestureAxis?
     private var usesKeyboardFallback = false
     private var swipeProgress = 0.0
     private var swipePostsSucceeded = true
@@ -39,15 +41,19 @@ final class SystemActionController: @unchecked Sendable {
 
     init(
         rawMotionUnitsPerSpace: Double = 500,
+        rawMotionUnitsPerMissionControl: Double = 500,
         postControlArrow: @escaping @Sendable (Int) -> Bool = {
             MXPostControlArrow($0)
         },
-        postDockSwipe: @escaping @Sendable (Double, Int) -> Bool = {
-            MXPostHorizontalDockSwipe($0, $1)
+        postDockSwipe:
+            @escaping @Sendable (GestureAxis, Double, Int) -> Bool = {
+                MXPostDockSwipe($1, $0.rawValue, $2)
         }
     ) {
         precondition(rawMotionUnitsPerSpace > 0)
+        precondition(rawMotionUnitsPerMissionControl > 0)
         self.rawMotionUnitsPerSpace = rawMotionUnitsPerSpace
+        self.rawMotionUnitsPerMissionControl = rawMotionUnitsPerMissionControl
         self.postControlArrow = postControlArrow
         self.postDockSwipe = postDockSwipe
     }
@@ -95,48 +101,48 @@ final class SystemActionController: @unchecked Sendable {
         completion: @escaping @Sendable (ActionResult) -> Void
     ) {
         switch event {
-        case let .began(dx):
+        case let .began(axis, delta):
             cancelActiveGesture()
             swipeActive = true
-            swipeProgress = progressDelta(for: dx)
-            lastPhysicalDirection = dx < 0 ? .left : .right
+            swipeAxis = axis
+            swipeProgress = progressDelta(for: delta, axis: axis)
+            lastPhysicalDirection = direction(for: delta, axis: axis)
             swipeBeganWithSecureInput = secureInputEnabled
             swipePostsSucceeded = postDockSwipe(
+                axis,
                 swipeProgress,
                 DockSwipePhase.began.rawValue
             )
             usesKeyboardFallback = !swipePostsSucceeded
 
-        case let .changed(dx):
-            guard swipeActive, dx != 0 else {
+        case let .changed(delta):
+            guard swipeActive, let swipeAxis, delta != 0 else {
                 return
             }
-            swipeProgress += progressDelta(for: dx)
-            lastPhysicalDirection = dx < 0 ? .left : .right
+            swipeProgress += progressDelta(for: delta, axis: swipeAxis)
+            lastPhysicalDirection = direction(for: delta, axis: swipeAxis)
             if !usesKeyboardFallback {
                 swipePostsSucceeded = postDockSwipe(
+                    swipeAxis,
                     swipeProgress,
                     DockSwipePhase.changed.rawValue
                 ) && swipePostsSucceeded
             }
 
         case .ended:
-            guard swipeActive else {
+            guard swipeActive, let swipeAxis else {
                 return
             }
-            let action = panelAction(for: swipeProgress)
+            let action = panelAction(for: swipeProgress, axis: swipeAxis)
             let succeeded: Bool
             if usesKeyboardFallback {
-                succeeded = postControlArrow(
-                    fallbackPhysicalDirection()
-                        .reversedSpaceDirection
-                        .controlArrowKeyCode
-                )
+                succeeded = postControlArrow(fallbackKeyCode(for: swipeAxis))
             } else {
                 let phase: DockSwipePhase = swipeProgress == 0
                     ? .cancelled
                     : .ended
                 succeeded = postDockSwipe(
+                    swipeAxis,
                     swipeProgress,
                     phase.rawValue
                 ) && swipePostsSucceeded
@@ -156,23 +162,58 @@ final class SystemActionController: @unchecked Sendable {
         }
     }
 
-    private func fallbackPhysicalDirection() -> GestureDirection {
+    private func fallbackKeyCode(for axis: GestureAxis) -> Int {
+        guard axis == .horizontal else {
+            return Self.missionControlKeyCode
+        }
+
+        let physicalDirection: GestureDirection
         if swipeProgress > 0 {
-            return .left
+            physicalDirection = .left
+        } else if swipeProgress < 0 {
+            physicalDirection = .right
+        } else {
+            physicalDirection = lastPhysicalDirection
         }
-        if swipeProgress < 0 {
-            return .right
-        }
-        return lastPhysicalDirection
+        return physicalDirection.reversed.controlArrowKeyCode
     }
 
-    private func progressDelta(for rawDeltaX: Int) -> Double {
-        // Reverse physical motion to preserve the established panel mapping:
-        // left reveals the next/right Space and right reveals the previous.
-        -Double(rawDeltaX) * (1.2 / rawMotionUnitsPerSpace)
+    private func progressDelta(
+        for rawDelta: Int,
+        axis: GestureAxis
+    ) -> Double {
+        switch axis {
+        case .horizontal:
+            // Reverse physical motion to preserve the established panel
+            // mapping: left reveals the next/right Space and right reveals the
+            // previous.
+            -Double(rawDelta) * (1.2 / rawMotionUnitsPerSpace)
+        case .vertical:
+            // HID RawXY uses negative Y for upward motion, matching the
+            // vertical DockSwipe direction that reveals Mission Control.
+            Double(rawDelta) * (1.2 / rawMotionUnitsPerMissionControl)
+        }
     }
 
-    private func panelAction(for progress: Double) -> PanelAction {
+    private func direction(
+        for rawDelta: Int,
+        axis: GestureAxis
+    ) -> GestureDirection {
+        switch axis {
+        case .horizontal:
+            rawDelta < 0 ? .left : .right
+        case .vertical:
+            rawDelta < 0 ? .up : .down
+        }
+    }
+
+    private func panelAction(
+        for progress: Double,
+        axis: GestureAxis
+    ) -> PanelAction {
+        if axis == .vertical {
+            return .missionControl
+        }
         if progress > 0 {
             return .nextSpace
         }
@@ -182,6 +223,7 @@ final class SystemActionController: @unchecked Sendable {
         return switch lastPhysicalDirection {
         case .left: .nextSpace
         case .right: .previousSpace
+        case .up, .down: .missionControl
         }
     }
 
@@ -189,8 +231,13 @@ final class SystemActionController: @unchecked Sendable {
         guard swipeActive else {
             return
         }
+        guard let swipeAxis else {
+            resetGestureState()
+            return
+        }
         if !usesKeyboardFallback {
             _ = postDockSwipe(
+                swipeAxis,
                 swipeProgress,
                 DockSwipePhase.cancelled.rawValue
             )
@@ -200,6 +247,7 @@ final class SystemActionController: @unchecked Sendable {
 
     private func resetGestureState() {
         swipeActive = false
+        swipeAxis = nil
         usesKeyboardFallback = false
         swipeProgress = 0
         swipePostsSucceeded = true

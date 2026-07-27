@@ -44,13 +44,17 @@ final class MXMasterSession: @unchecked Sendable {
         gestureThreshold: Double = 30,
         horizontalDeadZone: Double = 12,
         motionActivationDelay: TimeInterval = 0.06,
-        maximumTapDuration: TimeInterval = 0.4
+        maximumTapDuration: TimeInterval = 0.4,
+        isMissionControlActive: @escaping () -> Bool = {
+            MXIsMissionControlActive()
+        }
     ) {
         recognizer = ContinuousGestureRecognizer(
             activationThreshold: gestureThreshold,
             horizontalDeadZone: horizontalDeadZone,
             motionActivationDelay: motionActivationDelay,
-            maximumTapDuration: maximumTapDuration
+            maximumTapDuration: maximumTapDuration,
+            allowsDownwardGesture: isMissionControlActive
         )
     }
 
@@ -506,9 +510,11 @@ final class MXMasterSession: @unchecked Sendable {
                 emit(.direction(update.direction))
                 switch update.phase {
                 case .began:
-                    gestureHandler?(.began(dx: update.dx))
+                    gestureHandler?(
+                        .began(axis: update.axis, delta: update.delta)
+                    )
                 case .changed:
-                    gestureHandler?(.changed(dx: update.dx))
+                    gestureHandler?(.changed(delta: update.delta))
                 }
             }
             return
