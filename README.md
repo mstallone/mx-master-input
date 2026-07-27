@@ -33,7 +33,7 @@ MX Master Input gives the Sense Panel that same direct-manipulation model:
 - Apple silicon Mac running macOS 26.5.2 (`25F84`)
 - Accessibility permission for posting system actions
 
-Version 0.1.0 is validated with Xcode 26.6 and Swift 6.3.
+Version 0.1.1 is validated with Xcode 26.6 and Swift 6.3.
 
 ## Controls
 
@@ -83,7 +83,7 @@ xcodebuild \
 
 ## Releases
 
-Version tags such as `v0.1.0` run the GitHub release workflow. It tests the app,
+Version tags such as `v0.1.1` run the GitHub release workflow. It tests the app,
 builds a universal `arm64`/`x86_64` archive, signs it with NextByte's Developer
 ID Application certificate, submits it to Apple notarization, staples the
 ticket, and verifies it with both Gatekeeper and `syspolicy_check` before
