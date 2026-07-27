@@ -5,6 +5,8 @@ set instructions to "This hidden-answer field enables macOS Secure Event Input w
 With the insertion point in the field, test the MX Master Sense Panel:
 
 • Short click — Mission Control
+• Hold and drag up — progressively reveal Mission Control
+• Hold and drag down — progressively close Mission Control when it is open
 • Hold and drag left — progressively reveal the next/right Space
 • Hold and drag right — progressively reveal the previous/left Space
 • Reverse while held — the same live gesture should reverse immediately

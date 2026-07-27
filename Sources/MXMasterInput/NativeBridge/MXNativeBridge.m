@@ -1,5 +1,6 @@
 #import "MXNativeBridge.h"
 
+#import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
 #import <Carbon/Carbon.h>
 #import <IOKit/hid/IOHIDDevice.h>
@@ -586,10 +587,24 @@ BOOL MXPostControlArrow(NSInteger keyCode) {
     return succeeded;
 }
 
-BOOL MXPostHorizontalDockSwipe(double progress, NSInteger phase) {
+BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
+    // SystemActionController serializes calls, so these values describe the
+    // one DockSwipe currently being posted. The public bridge receives
+    // cumulative progress; DockSwipe exit velocity is based on the most recent
+    // incremental delta, just like a real trackpad event stream.
+    static NSInteger activeType = 0;
+    static double lastProgress = 0;
+    static double lastDelta = 0;
+
     if (@available(macOS 27.0, *)) {
         // macOS 27 moved DockSwipe state into an attached IOHIDEvent. Falling
         // back is safer than posting the obsolete field layout.
+        return NO;
+    }
+
+    // DockSwipe motion types: horizontal Space switching or vertical Mission
+    // Control/App Exposé.
+    if (type != 1 && type != 2) {
         return NO;
     }
 
@@ -608,6 +623,34 @@ BOOL MXPostHorizontalDockSwipe(double progress, NSInteger phase) {
     if (!CGPreflightPostEventAccess() || !isfinite(progress)) {
         return NO;
     }
+
+    if (phase == 1) {
+        activeType = type;
+        lastProgress = progress;
+        lastDelta = progress;
+    } else if (phase == 2 && activeType == type) {
+        const double delta = progress - lastProgress;
+        if (delta != 0) {
+            lastDelta = delta;
+        }
+        lastProgress = progress;
+    }
+
+    NSInteger postedPhase = phase;
+    if (
+        phase == 4
+        && activeType == type
+        && progress != 0
+        && lastDelta != 0
+        && ((progress < 0) != (lastDelta < 0))
+    ) {
+        // Releasing while reversing should rebound instead of committing in
+        // the direction of the earlier cumulative displacement.
+        postedPhase = 8;
+    }
+    const BOOL isEnding = postedPhase == 4 || postedPhase == 8;
+    const double exitSpeed =
+        isEnding && activeType == type ? lastDelta * 100 : 0;
 
     CGEventRef gestureEvent = CGEventCreate(NULL);
     CGEventRef dockEvent = CGEventCreate(NULL);
@@ -647,13 +690,18 @@ BOOL MXPostHorizontalDockSwipe(double progress, NSInteger phase) {
     );
     CGEventSetDoubleValueField(
         dockEvent,
+        (CGEventField)41,
+        33231
+    );
+    CGEventSetDoubleValueField(
+        dockEvent,
         (CGEventField)132,
-        phase
+        postedPhase
     );
     CGEventSetDoubleValueField(
         dockEvent,
         (CGEventField)134,
-        phase
+        postedPhase
     );
     CGEventSetDoubleValueField(
         dockEvent,
@@ -670,40 +718,135 @@ BOOL MXPostHorizontalDockSwipe(double progress, NSInteger phase) {
         (int64_t)progressBits
     );
 
-    // Bit-pattern representation of horizontal DockSwipe motion.
-    const double horizontalMotion = 1.401298464324817e-45;
+    // Bit-pattern representation of the DockSwipe motion type. These are the
+    // doubles produced when the horizontal/vertical integer enum is
+    // interpreted through the private event-field layout.
+    const double encodedMotion = type == 1
+        ? 1.401298464324817e-45
+        : 2.802596928649634e-45;
     CGEventSetDoubleValueField(
         dockEvent,
         (CGEventField)119,
-        horizontalMotion
+        encodedMotion
     );
     CGEventSetDoubleValueField(
         dockEvent,
         (CGEventField)139,
-        horizontalMotion
+        encodedMotion
     );
     CGEventSetDoubleValueField(
         dockEvent,
         (CGEventField)123,
-        1
+        type
     );
     CGEventSetDoubleValueField(
         dockEvent,
         (CGEventField)165,
-        1
+        type
     );
     CGEventSetIntegerValueField(
         dockEvent,
         (CGEventField)136,
-        0
+        1
     );
+    if (isEnding) {
+        CGEventSetDoubleValueField(
+            dockEvent,
+            (CGEventField)129,
+            exitSpeed
+        );
+        CGEventSetDoubleValueField(
+            dockEvent,
+            (CGEventField)130,
+            exitSpeed
+        );
+    }
 
     CGEventPost(kCGSessionEventTap, dockEvent);
     CGEventPost(kCGSessionEventTap, gestureEvent);
 
     CFRelease(dockEvent);
     CFRelease(gestureEvent);
+    if (isEnding) {
+        activeType = 0;
+        lastProgress = 0;
+        lastDelta = 0;
+    }
     return YES;
+}
+
+BOOL MXIsMissionControlActive(void) {
+    NSRunningApplication *dock = [[NSRunningApplication
+        runningApplicationsWithBundleIdentifier:@"com.apple.dock"
+    ] firstObject];
+    if (!dock) {
+        return NO;
+    }
+
+    AXUIElementRef dockElement = AXUIElementCreateApplication(
+        dock.processIdentifier
+    );
+    if (!dockElement) {
+        return NO;
+    }
+
+    CFTypeRef childrenValue = NULL;
+    AXError error = AXUIElementCopyAttributeValue(
+        dockElement,
+        kAXChildrenAttribute,
+        &childrenValue
+    );
+    CFRelease(dockElement);
+    if (
+        error != kAXErrorSuccess
+        || !childrenValue
+        || CFGetTypeID(childrenValue) != CFArrayGetTypeID()
+    ) {
+        if (childrenValue) {
+            CFRelease(childrenValue);
+        }
+        return NO;
+    }
+
+    BOOL isActive = NO;
+    CFArrayRef children = (CFArrayRef)childrenValue;
+    for (
+        CFIndex index = 0;
+        index < CFArrayGetCount(children);
+        index++
+    ) {
+        CFTypeRef child = CFArrayGetValueAtIndex(children, index);
+        if (
+            !child
+            || CFGetTypeID(child) != AXUIElementGetTypeID()
+        ) {
+            continue;
+        }
+
+        CFTypeRef identifierValue = NULL;
+        AXError identifierError = AXUIElementCopyAttributeValue(
+            (AXUIElementRef)child,
+            CFSTR("AXIdentifier"),
+            &identifierValue
+        );
+        if (
+            identifierError == kAXErrorSuccess
+            && identifierValue
+            && CFGetTypeID(identifierValue) == CFStringGetTypeID()
+            && CFEqual(identifierValue, CFSTR("mc"))
+        ) {
+            isActive = YES;
+        }
+        if (identifierValue) {
+            CFRelease(identifierValue);
+        }
+        if (isActive) {
+            break;
+        }
+    }
+
+    CFRelease(childrenValue);
+    return isActive;
 }
 
 BOOL MXIsSecureInputEnabled(void) {
