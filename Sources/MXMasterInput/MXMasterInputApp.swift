@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct MXMasterInputApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.openSettings) private var openSettings
     @StateObject private var model = AppModel()
 
     var body: some Scene {
@@ -32,8 +33,9 @@ struct MXMasterInputApp: App {
                 }
                 .disabled(model.isBusy)
 
-                SettingsLink {
-                    Text("Settings…")
+                Button("Settings…") {
+                    openSettings()
+                    NSApplication.shared.activate()
                 }
 
                 Divider()
