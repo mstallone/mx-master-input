@@ -4,6 +4,7 @@
 build/
 dist/
 DerivedData*/
+PreviewDerivedData/
 *.xcarchive
 *.dSYM
 *.xcresult

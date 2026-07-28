@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var model: AppModel
+    @State private var diagnosticsExpanded = true
 
     var body: some View {
         Form {
@@ -9,6 +10,10 @@ struct ContentView: View {
                 LabeledContent("Status", value: model.status)
                 LabeledContent("Device", value: model.deviceName)
                 LabeledContent("Haptic engine", value: model.hapticStatus)
+                LabeledContent(
+                    "Accessibility",
+                    value: model.hasPostEventAccess ? "Granted" : "Required"
+                )
 
                 HStack {
                     Button(model.isEnabled ? "Disable" : "Enable") {
@@ -24,38 +29,13 @@ struct ContentView: View {
                         ProgressView()
                             .controlSize(.small)
                     }
-                }
-            }
 
-            Section("Secure Input path") {
-                LabeledContent(
-                    "Secure Input",
-                    value: model.secureInputEnabled ? "Enabled" : "Disabled"
-                )
-                LabeledContent(
-                    "Post-event permission",
-                    value: model.hasPostEventAccess ? "Granted" : "Required"
-                )
-                LabeledContent(
-                    "Runtime verification",
-                    value: model.secureInputVerification
-                )
-
-                if !model.hasPostEventAccess {
-                    Button("Grant Accessibility permission") {
-                        model.requestPostEventPermission()
+                    if !model.hasPostEventAccess {
+                        Button("Grant Accessibility permission") {
+                            model.requestPostEventPermission()
+                        }
                     }
                 }
-
-                Text(
-                    "MX Master input is read directly from HID++. Panel drags "
-                    + "use the Apple-native continuous gesture pipeline. Taps "
-                    + "and the compatibility fallback use Control–arrow through "
-                    + "Accessibility. Runtime verification confirms submission, "
-                    + "not delivery."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
 
             Section("Panel mapping") {
@@ -79,9 +59,25 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
 
-            Section("Diagnostics") {
-                LabeledContent("Last input", value: model.lastInput)
-                LabeledContent("Last action", value: model.lastAction)
+            Section {
+                DisclosureGroup(
+                    isExpanded: $diagnosticsExpanded
+                ) {
+                    VStack(spacing: 10) {
+                        LabeledContent(
+                            "Secure Input",
+                            value: model.secureInputEnabled
+                                ? "Enabled"
+                                : "Disabled"
+                        )
+                        LabeledContent("Last input", value: model.lastInput)
+                        LabeledContent("Last action", value: model.lastAction)
+                    }
+                    .padding(.top, 10)
+                } label: {
+                    Text("Diagnostics")
+                        .font(.headline)
+                }
             }
 
             Section {
