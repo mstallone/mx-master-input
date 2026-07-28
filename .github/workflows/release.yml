@@ -44,6 +44,7 @@ jobs:
           APPLE_NOTARY_PRIVATE_KEY_BASE64: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY_BASE64 }}
           APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
           set -euo pipefail
 
@@ -57,7 +58,8 @@ jobs:
             DEVELOPER_ID_CERTIFICATE_PASSWORD \
             APPLE_NOTARY_PRIVATE_KEY_BASE64 \
             APPLE_NOTARY_KEY_ID \
-            APPLE_NOTARY_ISSUER_ID
+            APPLE_NOTARY_ISSUER_ID \
+            SPARKLE_ED_PRIVATE_KEY
           do
             if [[ -z "${!name:-}" ]]; then
               echo "::error::Missing required repository secret: $name"
@@ -144,6 +146,25 @@ jobs:
           APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
         run: Scripts/build-release.sh "$GITHUB_REF_NAME"
 
+      - name: Generate signed Sparkle appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          generate_appcast="$(
+            find "$RUNNER_TEMP/DerivedData-tests/SourcePackages/artifacts" \
+              -type f \
+              -path '*/Sparkle/bin/generate_appcast' \
+              -print \
+              -quit
+          )"
+          if [[ -z "$generate_appcast" ]]; then
+            echo "::error::Sparkle's generate_appcast tool was not resolved."
+            exit 1
+          fi
+          SPARKLE_GENERATE_APPCAST_PATH="$generate_appcast" \
+            Scripts/generate-appcast.sh "$GITHUB_REF_NAME"
+
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -153,6 +174,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             "dist/MXMasterInput-${version}-macOS.zip" \
             "dist/MXMasterInput-${version}-macOS.zip.sha256" \
+            "dist/appcast.xml" \
             --verify-tag \
             --title "MX Master Input $version" \
             --generate-notes

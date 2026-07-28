@@ -12,6 +12,7 @@ struct MXMasterInputApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @Environment(\.openSettings) private var openSettings
     @StateObject private var model = AppModel()
+    @StateObject private var updater = AppUpdater()
 
     var body: some Scene {
         MenuBarExtra {
@@ -37,6 +38,11 @@ struct MXMasterInputApp: App {
                     openSettings()
                     NSApplication.shared.activate()
                 }
+
+                Button("Check for Updates…") {
+                    updater.checkForUpdates()
+                }
+                .disabled(!updater.canCheckForUpdates)
 
                 Divider()
 

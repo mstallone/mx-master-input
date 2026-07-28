@@ -19,10 +19,18 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.1</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/mstallone/mx-master-input/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>UABTvdTVnMHNzqLh/IThuv5qtN7eCBK2dD1ztAtXk/o=</string>
 </dict>
 </plist>
