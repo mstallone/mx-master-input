@@ -1,15 +1,22 @@
 import Foundation
 
 final class MXMasterSession: @unchecked Sendable {
+    private enum PendingResponse {
+        case hidpp20(
+            deviceIndex: UInt8,
+            featureIndex: UInt8,
+            function: UInt8
+        )
+        case receiverRegister(command: UInt8, address: UInt8)
+    }
+
     private final class PendingRequest {
-        let featureIndex: UInt8
-        let function: UInt8
+        let expectedResponse: PendingResponse
         let semaphore = DispatchSemaphore(value: 0)
         var response: HIDPPPacket?
 
-        init(featureIndex: UInt8, function: UInt8) {
-            self.featureIndex = featureIndex
-            self.function = function
+        init(expectedResponse: PendingResponse) {
+            self.expectedResponse = expectedResponse
         }
     }
 
@@ -18,6 +25,15 @@ final class MXMasterSession: @unchecked Sendable {
         static let deviceName: UInt16 = 0x0005
         static let reprogrammableControlsV4: UInt16 = 0x1B04
         static let haptic: UInt16 = 0x19B0
+    }
+
+    private enum Receiver {
+        static let productID = 0xC548
+        static let index: UInt8 = 0xFF
+        static let readShortRegister: UInt8 = 0x81
+        static let writeShortRegister: UInt8 = 0x80
+        static let notificationsRegister: UInt8 = 0x00
+        static let wirelessNotificationsFlag: UInt8 = 0x01
     }
 
     private let workQueue = DispatchQueue(
@@ -38,7 +54,10 @@ final class MXMasterSession: @unchecked Sendable {
     private var hapticIndex: UInt8?
     private var panelHeld = false
     private var panelDiverted = false
+    private var activeMode = false
     private var started = false
+    private var configurationRecoveryGeneration = 0
+    private var configurationRecoveryScheduled = false
 
     init(
         gestureThreshold: Double = 30,
@@ -78,6 +97,7 @@ final class MXMasterSession: @unchecked Sendable {
                     self.eventHandler = eventHandler
                     self.gestureHandler = gestureHandler
                     self.tapHandler = tapHandler
+                    self.activeMode = activeMode
                     let device = try self.connectOnQueue(activeMode: activeMode)
                     self.started = true
                     continuation.resume(returning: device)
@@ -127,7 +147,7 @@ final class MXMasterSession: @unchecked Sendable {
 
             connection = candidateConnection
             let indexes: [UInt8]
-            if candidate.productID == 0xC548 {
+            if candidate.productID == Receiver.productID {
                 indexes = Array(1 ... 6)
             } else {
                 indexes = [0xFF, 1, 2, 3, 4, 5, 6]
@@ -188,6 +208,12 @@ final class MXMasterSession: @unchecked Sendable {
                     panelDiverted = true
                 }
 
+                if activeMode,
+                   candidate.productID == Receiver.productID,
+                   !enableReceiverWirelessNotifications() {
+                    throw MXMasterSessionError.receiverNotificationsFailed
+                }
+
                 let connected = ConnectedMXMaster(
                     name: name,
                     transport: candidate.transport,
@@ -215,13 +241,15 @@ final class MXMasterSession: @unchecked Sendable {
     }
 
     private func stopOnQueue() {
+        configurationRecoveryGeneration += 1
+        configurationRecoveryScheduled = false
+
         if panelDiverted {
             _ = setPanelReporting(
                 flags: MXMasterProtocol.restorePanelRawXYDefault,
                 timeout: 0.5
             )
         }
-
         panelDiverted = false
         panelHeld = false
         if recognizer.cancel() {
@@ -238,6 +266,7 @@ final class MXMasterSession: @unchecked Sendable {
         connection = nil
         reprogrammableControlsIndex = nil
         hapticIndex = nil
+        activeMode = false
         started = false
         emit(.disconnected)
     }
@@ -380,14 +409,57 @@ final class MXMasterSession: @unchecked Sendable {
         parameters: [UInt8],
         timeout: TimeInterval
     ) -> HIDPPPacket? {
+        let pending = PendingRequest(
+            expectedResponse: .hidpp20(
+                deviceIndex: deviceIndex,
+                featureIndex: featureIndex,
+                function: function
+            )
+        )
+        let report = HIDPPPacket.request(
+            deviceIndex: deviceIndex,
+            featureIndex: featureIndex,
+            function: function,
+            parameters: parameters
+        )
+        guard let response = sendRequest(
+            report,
+            pending: pending,
+            timeout: timeout
+        ), !response.isError else {
+            return nil
+        }
+        return response
+    }
+
+    private func receiverRegisterRequest(
+        command: UInt8,
+        parameters: [UInt8],
+        timeout: TimeInterval
+    ) -> HIDPPPacket? {
+        let pending = PendingRequest(
+            expectedResponse: .receiverRegister(
+                command: command,
+                address: Receiver.notificationsRegister
+            )
+        )
+        let report = HIDPPPacket.shortRegisterRequest(
+            deviceIndex: Receiver.index,
+            command: command,
+            address: Receiver.notificationsRegister,
+            parameters: parameters
+        )
+        return sendRequest(report, pending: pending, timeout: timeout)
+    }
+
+    private func sendRequest(
+        _ report: Data,
+        pending: PendingRequest,
+        timeout: TimeInterval
+    ) -> HIDPPPacket? {
         guard let connection else {
             return nil
         }
-
-        let pending = PendingRequest(
-            featureIndex: featureIndex,
-            function: function
-        )
 
         pendingLock.lock()
         guard pendingRequest == nil else {
@@ -398,12 +470,6 @@ final class MXMasterSession: @unchecked Sendable {
         pendingLock.unlock()
 
         do {
-            let report = HIDPPPacket.request(
-                deviceIndex: deviceIndex,
-                featureIndex: featureIndex,
-                function: function,
-                parameters: parameters
-            )
             try connection.sendOutputReport(report)
         } catch {
             pendingLock.lock()
@@ -426,9 +492,7 @@ final class MXMasterSession: @unchecked Sendable {
         }
         pendingLock.unlock()
 
-        guard waitResult == .success,
-              let response,
-              !response.isError else {
+        guard waitResult == .success, let response else {
             return nil
         }
         return response
@@ -441,35 +505,9 @@ final class MXMasterSession: @unchecked Sendable {
 
         pendingLock.lock()
         let pending = pendingRequest
-        let expectedFunctions: Set<UInt8>
-        if let pending {
-            expectedFunctions = [
-                pending.function,
-                (pending.function + 1) & 0x0F,
-            ]
-        } else {
-            expectedFunctions = []
-        }
-
-        let matchesError =
-            packet.isError
-            && packet.deviceIndex == deviceIndex
-            && packet.parameters.first.map {
-                $0 & 0x0F == HIDPPPacket.softwareID
-            } == true
-
-        let matchesPending =
-            pending != nil
-            && (
-                matchesError
-                || (
-                    packet.deviceIndex == self.deviceIndex
-                    &&
-                    packet.featureIndex == pending?.featureIndex
-                    && packet.softwareID == HIDPPPacket.softwareID
-                    && expectedFunctions.contains(packet.function)
-                )
-            )
+        let matchesPending = pending.map {
+            matches(packet, expected: $0.expectedResponse)
+        } == true
 
         if matchesPending, let pending {
             pending.response = packet
@@ -484,7 +522,47 @@ final class MXMasterSession: @unchecked Sendable {
         }
     }
 
+    private func matches(
+        _ packet: HIDPPPacket,
+        expected: PendingResponse
+    ) -> Bool {
+        switch expected {
+        case let .hidpp20(expectedDevice, featureIndex, function):
+            let matchesError =
+                packet.isError
+                && packet.deviceIndex == expectedDevice
+                && packet.parameters.first.map {
+                    $0 & 0x0F == HIDPPPacket.softwareID
+                } == true
+            let expectedFunctions: Set<UInt8> = [
+                function,
+                (function + 1) & 0x0F,
+            ]
+            return matchesError
+                || (
+                    packet.deviceIndex == expectedDevice
+                    && packet.featureIndex == featureIndex
+                    && packet.softwareID == HIDPPPacket.softwareID
+                    && expectedFunctions.contains(packet.function)
+                )
+
+        case let .receiverRegister(command, address):
+            let packetAddress =
+                packet.function << 4
+                | packet.softwareID
+            return packet.deviceIndex == Receiver.index
+                && packet.featureIndex == command
+                && packetAddress == address
+        }
+    }
+
     private func processUnsolicited(_ packet: HIDPPPacket) {
+        if packet.deviceIndex == deviceIndex,
+           packet.reportsEstablishedLink {
+            scheduleConfigurationRecovery()
+            return
+        }
+
         guard packet.featureIndex == reprogrammableControlsIndex else {
             return
         }
@@ -554,6 +632,133 @@ final class MXMasterSession: @unchecked Sendable {
                 emit(.tap)
                 tapHandler?()
             }
+        }
+    }
+
+    private func enableReceiverWirelessNotifications() -> Bool {
+        guard let response = receiverRegisterRequest(
+            command: Receiver.readShortRegister,
+            parameters: [],
+            timeout: 0.8
+        ), response.parameters.count >= 3 else {
+            return false
+        }
+
+        let originalFlags = Array(response.parameters.prefix(3))
+        guard originalFlags[1] & Receiver.wirelessNotificationsFlag == 0 else {
+            return true
+        }
+
+        var updatedFlags = originalFlags
+        updatedFlags[1] |= Receiver.wirelessNotificationsFlag
+        guard receiverRegisterRequest(
+            command: Receiver.writeShortRegister,
+            parameters: updatedFlags,
+            timeout: 0.8
+        ) != nil,
+        let verification = receiverRegisterRequest(
+            command: Receiver.readShortRegister,
+            parameters: [],
+            timeout: 0.8
+        ),
+        verification.parameters.count >= 3,
+        verification.parameters[1] & Receiver.wirelessNotificationsFlag != 0
+        else {
+            return false
+        }
+
+        // Register 0x00 is shared receiver state with no per-client ownership.
+        // Leave this additive bit enabled so stopping this session cannot
+        // disable notifications that another HID++ client relies on.
+        return true
+    }
+
+    /// Reprogrammable-control reporting is volatile device state. The mouse
+    /// clears it when its wireless link sleeps, while the receiver's HID
+    /// connection and this session remain open. Reapply the active-mode
+    /// configuration whenever the receiver reports that the mouse woke.
+    private func scheduleConfigurationRecovery() {
+        guard started, activeMode, !configurationRecoveryScheduled else {
+            return
+        }
+
+        configurationRecoveryScheduled = true
+        configurationRecoveryGeneration += 1
+        let generation = configurationRecoveryGeneration
+
+        panelHeld = false
+        if recognizer.cancel() {
+            gestureHandler?(.cancelled)
+        }
+
+        workQueue.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            self?.recoverConfiguration(
+                generation: generation,
+                attempt: 0
+            )
+        }
+    }
+
+    private func recoverConfiguration(
+        generation: Int,
+        attempt: Int
+    ) {
+        guard started,
+              activeMode,
+              configurationRecoveryScheduled,
+              generation == configurationRecoveryGeneration else {
+            return
+        }
+
+        let reprogIndex = findFeature(
+            Feature.reprogrammableControlsV4,
+            timeout: 0.8
+        )
+        let recoveredHapticIndex = findFeature(
+            Feature.haptic,
+            timeout: 0.8
+        )
+        reprogrammableControlsIndex = reprogIndex
+        hapticIndex = recoveredHapticIndex
+
+        let hapticDisabled = recoveredHapticIndex.map {
+            request(
+                featureIndex: $0,
+                function: 2,
+                parameters: MXMasterProtocol.hapticOffParameters,
+                timeout: 1.0
+            ) != nil
+        } == true
+        let diversionRestored =
+            reprogIndex != nil
+            && setPanelReporting(
+                flags: MXMasterProtocol.divertPanelWithRawXY,
+                timeout: 1.0
+            )
+
+        if hapticDisabled, diversionRestored {
+            panelDiverted = true
+            configurationRecoveryScheduled = false
+            emit(.status("Enabled"))
+            return
+        }
+
+        let retryDelays: [TimeInterval] = [0.5, 1.5]
+        guard attempt < retryDelays.count else {
+            configurationRecoveryScheduled = false
+            emit(.error(
+                "The mouse woke, but its gesture configuration could not be restored."
+            ))
+            return
+        }
+
+        workQueue.asyncAfter(
+            deadline: .now() + retryDelays[attempt]
+        ) { [weak self] in
+            self?.recoverConfiguration(
+                generation: generation,
+                attempt: attempt + 1
+            )
         }
     }
 
