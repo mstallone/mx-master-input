@@ -1,30 +1,13 @@
 # MX Master Input
 
-**First-party-feeling, Apple-native gestures on a Logitech MX Master.**
+**Trackpad-style macOS gestures for the Logitech MX Master 4 Sense Panel.**
 
-MX Master Input brings the progressive Mission Control and Space-switching
-experience of Apple's Magic Trackpad to the MX Master 4 Sense Panel. The
-desktop follows your movement, responds when you reverse direction, and
-commits or snaps back when you release—just like a native macOS gesture.
-
-Unlike conventional mouse-button remapping, this is not a gesture translated
-into a one-shot keyboard shortcut. The app reads the Sense Panel directly over
-Logitech HID++ and drives one continuous, phased system gesture.
-
-## Why it feels native
-
-A Control-arrow shortcut tells macOS where to go and leaves the animation to
-finish by itself. A trackpad gesture keeps you in control throughout the
-transition: you can slow down, stop, reverse, commit, or cancel before
-releasing.
-
-MX Master Input gives the Sense Panel that same direct-manipulation model:
-
-- progressive control of Mission Control and Space transitions
-- immediate reversals during the active gesture
-- natural release behavior that commits or snaps back
-- an upward drag or simple click to open Mission Control, and a downward drag
-  to close it
+MX Master Input brings the Magic Trackpad's progressive Mission Control and
+Space-switching gestures to the MX Master 4. It reads the Sense Panel directly
+over Logitech HID++ and drives a continuous macOS gesture instead of translating
+each swipe into a keyboard shortcut. The desktop follows your movement—even
+when you pause or reverse direction—then commits or snaps back when you
+release.
 
 ## Requirements
 
@@ -46,10 +29,8 @@ Version 0.1.2 is validated with Xcode 26.6 and Swift 6.3.
 | Hold and drag right | Previous Space |
 
 The Space mapping is intentionally reversed so the desktop tracks the physical
-motion naturally. A central dead zone filters the small movement caused by
-pressing the panel. Once a swipe begins, its horizontal or vertical axis is
-locked and every movement or reversal on that axis updates the same active
-gesture.
+motion naturally. A central dead zone ignores movement caused by pressing the
+panel, and each swipe locks to its initial horizontal or vertical axis.
 
 Mission Control taps and the compatibility fallback use the Control-arrow
 shortcuts configured in macOS Keyboard settings.
@@ -87,18 +68,11 @@ The app uses [Sparkle 2](https://sparkle-project.org/) to check for updates
 daily and install them automatically. **Check for Updates…** in the menu-bar
 menu starts a check immediately.
 
-Version tags such as `v0.1.2` run the GitHub release workflow. It tests the app,
-builds a universal `arm64`/`x86_64` archive, signs it with NextByte's Developer
-ID Application certificate, submits it to Apple notarization, staples the
-ticket, and verifies it with both Gatekeeper and `syspolicy_check` before
-publishing the ZIP, its SHA-256 checksum, and a Sparkle-signed `appcast.xml`.
-The appcast is served from the latest GitHub Release, so the update system does
-not require a separate web host or GitHub Pages deployment. The workflow
-rejects unsigned, Apple Development-signed, unnotarized, wrongly versioned, or
-Sparkle-unsigned builds.
+Version tags such as `v0.1.2` run the GitHub release workflow. It tests, signs,
+notarizes, and verifies a universal app before publishing the ZIP, SHA-256
+checksum, and Sparkle-signed `appcast.xml` to GitHub Releases.
 
-The repository needs these Actions secrets before a maintainer pushes a version
-tag:
+The workflow requires these Actions secrets:
 
 - `DEVELOPER_ID_CERTIFICATE_BASE64`
 - `DEVELOPER_ID_CERTIFICATE_PASSWORD`
@@ -109,31 +83,28 @@ tag:
 
 `SPARKLE_ED_PRIVATE_KEY` is the private EdDSA key exported by Sparkle's
 `generate_keys` tool. Its public half is committed in `Info.plist`. The private
-key is also stored locally in the macOS Keychain under the
-`com.mattstallone.mxmasterinput` Sparkle account. It must remain in Actions
-secrets (and a secure backup), because losing or replacing both it and the
-Developer ID identity can prevent installed copies from accepting future
-updates.
+key is also stored in the macOS Keychain under the
+`com.mattstallone.mxmasterinput` Sparkle account. Keep it in Actions secrets and
+a secure backup; replacing both it and the Developer ID identity can prevent
+installed copies from accepting updates.
 
 ## How it works
 
 MX Master Input reads Logitech's vendor-defined HID++ reports directly and
 converts horizontal and vertical Sense Panel motion into the private
-`DockSwipe` event consumed by the native macOS gesture pipeline. A single
-stream carries `began`, `changed`, `ended`, and `cancelled` phases, allowing
-reversals to modify the transition already in progress.
+`DockSwipe` event used by macOS.
 
-macOS does not publish an API for injecting this progressive gesture, so the
-event format is inherently OS-version-sensitive. The current implementation is
-validated on macOS 26.5.2. It disables the private path on macOS 27 and falls
-back to standard Control-arrow actions.
+Because macOS does not publish an API for injecting progressive gestures, this
+event format is OS-version-sensitive. The private path is validated on macOS
+26.5.2, disabled on macOS 27, and replaced there with standard Control-arrow
+actions.
 
 Direct HID++ input continues while Secure Event Input is enabled. Accessibility
 permission is still required to submit Mission Control and Space actions. Logi
 Options+ is not required.
 
 The `DockSwipe` field mapping was informed by the reverse engineering published
-in [Mac Mouse Fix](https://github.com/noah-nuebling/mac-mouse-fix), under the
+in [Mac Mouse Fix](https://github.com/noah-nuebling/mac-mouse-fix), under its
 [MMF License](https://github.com/noah-nuebling/mac-mouse-fix/blob/master/License).
 
 MX Master Input is an independent project and is not affiliated with Apple or
