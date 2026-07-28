@@ -27,7 +27,7 @@ targets:
       path: Sources/MXMasterInput/Info.plist
       properties:
         CFBundleDisplayName: MX Master Input
-        CFBundleShortVersionString: "0.1.1"
+        CFBundleShortVersionString: "0.1.2"
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.utilities
         LSUIElement: true
@@ -37,7 +37,7 @@ targets:
         SUPublicEDKey: UABTvdTVnMHNzqLh/IThuv5qtN7eCBK2dD1ztAtXk/o=
     settings:
       base:
-        CURRENT_PROJECT_VERSION: "0.1.1"
+        CURRENT_PROJECT_VERSION: "0.1.2"
         PRODUCT_BUNDLE_IDENTIFIER: com.mattstallone.mxmasterinput
         PRODUCT_NAME: MXMasterInput
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
