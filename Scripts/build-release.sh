@@ -65,6 +65,7 @@ readonly ARCHIVE_PATH="$BUILD_ROOT/$PRODUCT_NAME.xcarchive"
 readonly APP_PATH="$ARCHIVE_PATH/Products/Applications/$PRODUCT_NAME.app"
 readonly NOTARY_ARCHIVE="$BUILD_ROOT/notarization.zip"
 readonly NOTARY_RESULT="$BUILD_ROOT/notary-result.json"
+readonly NOTARY_LOG="$BUILD_ROOT/notary-log.json"
 readonly OUTPUT_DIRECTORY="${RELEASE_OUTPUT_DIR:-$REPOSITORY_ROOT/dist}"
 readonly RELEASE_ARCHIVE="$OUTPUT_DIRECTORY/$PRODUCT_NAME-$RELEASE_VERSION-macOS.zip"
 readonly RELEASE_CHECKSUM="$RELEASE_ARCHIVE.sha256"
@@ -105,6 +106,48 @@ printf 'Archiving %s %s for arm64 and x86_64...\n' "$PRODUCT_NAME" "$RELEASE_VER
 
 [[ -d "$APP_PATH" ]] || fail "archive did not contain $PRODUCT_NAME.app"
 
+readonly SPARKLE_FRAMEWORK="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+readonly SPARKLE_VERSION="$SPARKLE_FRAMEWORK/Versions/B"
+readonly SPARKLE_INSTALLER="$SPARKLE_VERSION/XPCServices/Installer.xpc"
+readonly SPARKLE_DOWNLOADER="$SPARKLE_VERSION/XPCServices/Downloader.xpc"
+readonly SPARKLE_AUTOUPDATE="$SPARKLE_VERSION/Autoupdate"
+readonly SPARKLE_UPDATER="$SPARKLE_VERSION/Updater.app"
+
+for component in \
+  "$SPARKLE_INSTALLER" \
+  "$SPARKLE_DOWNLOADER" \
+  "$SPARKLE_AUTOUPDATE" \
+  "$SPARKLE_UPDATER" \
+  "$SPARKLE_FRAMEWORK"
+do
+  [[ -e "$component" ]] ||
+    fail "archive is missing Sparkle component: $component"
+done
+
+# Code Sign on Copy signs Sparkle.framework itself but leaves its nested helpers
+# with Sparkle's ad-hoc signatures. Re-sign the helpers inside-out for Developer
+# ID distribution, as required by Sparkle's manual distribution guidance.
+codesign_arguments=(
+  --force
+  --sign "$SIGNING_IDENTITY"
+  --options runtime
+  --timestamp
+)
+if [[ -n "${RELEASE_KEYCHAIN_PATH:-}" ]]; then
+  codesign_arguments+=(--keychain "$RELEASE_KEYCHAIN_PATH")
+fi
+
+printf 'Re-signing Sparkle helpers for Developer ID distribution...\n'
+/usr/bin/codesign "${codesign_arguments[@]}" "$SPARKLE_INSTALLER"
+/usr/bin/codesign \
+  "${codesign_arguments[@]}" \
+  --preserve-metadata=entitlements \
+  "$SPARKLE_DOWNLOADER"
+/usr/bin/codesign "${codesign_arguments[@]}" "$SPARKLE_AUTOUPDATE"
+/usr/bin/codesign "${codesign_arguments[@]}" "$SPARKLE_UPDATER"
+/usr/bin/codesign "${codesign_arguments[@]}" "$SPARKLE_FRAMEWORK"
+/usr/bin/codesign "${codesign_arguments[@]}" "$APP_PATH"
+
 BUILT_VERSION="$(
   /usr/libexec/PlistBuddy \
     -c 'Print:CFBundleVersion' \
@@ -139,6 +182,29 @@ readonly SIGNATURE_DETAILS
 /usr/bin/grep -Fq 'Timestamp=' <<<"$SIGNATURE_DETAILS" ||
   fail "release signature does not include a secure timestamp"
 
+for component in \
+  "$SPARKLE_INSTALLER" \
+  "$SPARKLE_DOWNLOADER" \
+  "$SPARKLE_AUTOUPDATE" \
+  "$SPARKLE_UPDATER" \
+  "$SPARKLE_FRAMEWORK"
+do
+  /usr/bin/codesign --verify --strict --verbose=2 "$component"
+  NESTED_SIGNATURE_DETAILS="$(
+    /usr/bin/codesign -d --verbose=4 "$component" 2>&1
+  )"
+  /usr/bin/grep -Fq 'Authority=Developer ID Application:' \
+    <<<"$NESTED_SIGNATURE_DETAILS" ||
+    fail "Sparkle component is not signed with Developer ID Application: $component"
+  /usr/bin/grep -Fq "TeamIdentifier=$EXPECTED_TEAM_ID" \
+    <<<"$NESTED_SIGNATURE_DETAILS" ||
+    fail "Sparkle component has the wrong team identifier: $component"
+  /usr/bin/grep -Eq 'flags=.*runtime' <<<"$NESTED_SIGNATURE_DETAILS" ||
+    fail "Sparkle component does not enable hardened runtime: $component"
+  /usr/bin/grep -Fq 'Timestamp=' <<<"$NESTED_SIGNATURE_DETAILS" ||
+    fail "Sparkle component does not include a secure timestamp: $component"
+done
+
 ENTITLEMENTS="$(
   /usr/bin/codesign -d --entitlements :- "$APP_PATH" 2>&1 || true
 )"
@@ -167,6 +233,16 @@ NOTARY_STATUS="$(
 readonly NOTARY_STATUS
 if [[ "$NOTARY_STATUS" != "Accepted" ]]; then
   /bin/cat "$NOTARY_RESULT" >&2
+  NOTARY_SUBMISSION_ID="$(
+    /usr/bin/plutil -extract id raw -o - -- "$NOTARY_RESULT"
+  )"
+  /usr/bin/xcrun notarytool log "$NOTARY_SUBMISSION_ID" "$NOTARY_LOG" \
+    --key "$NOTARY_KEY_PATH" \
+    --key-id "$NOTARY_KEY_ID" \
+    --issuer "$NOTARY_ISSUER_ID" >&2 || true
+  if [[ -f "$NOTARY_LOG" ]]; then
+    /bin/cat "$NOTARY_LOG" >&2
+  fi
   fail "Apple notarization returned $NOTARY_STATUS"
 fi
 
