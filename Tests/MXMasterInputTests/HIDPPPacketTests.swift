@@ -19,6 +19,46 @@ final class HIDPPPacketTests: XCTestCase {
         XCTAssertEqual(Array(bytes[4 ... 6]), [0x01, 0xA0, 0x33])
     }
 
+    func testReceiverNotificationRegisterReadUsesShortReport() {
+        let data = HIDPPPacket.shortRegisterRequest(
+            deviceIndex: 0xFF,
+            command: 0x81,
+            address: 0x00,
+            parameters: []
+        )
+
+        XCTAssertEqual(
+            [UInt8](data),
+            [0x10, 0xFF, 0x81, 0x00, 0x00, 0x00, 0x00]
+        )
+    }
+
+    func testReceiverNotificationRegisterWritePreservesAllFlags() {
+        let data = HIDPPPacket.shortRegisterRequest(
+            deviceIndex: 0xFF,
+            command: 0x80,
+            address: 0x00,
+            parameters: [0x10, 0x09, 0x04]
+        )
+
+        XCTAssertEqual(
+            [UInt8](data),
+            [0x10, 0xFF, 0x80, 0x00, 0x10, 0x09, 0x04]
+        )
+    }
+
+    func testReceiverNotificationRegisterResponseDecodesFlagBytes() {
+        let packet = HIDPPPacket.parse(
+            Data([0x10, 0xFF, 0x81, 0x00, 0x10, 0x09, 0x04])
+        )
+
+        XCTAssertEqual(packet?.deviceIndex, 0xFF)
+        XCTAssertEqual(packet?.featureIndex, 0x81)
+        XCTAssertEqual(packet?.function, 0)
+        XCTAssertEqual(packet?.softwareID, 0)
+        XCTAssertEqual(packet?.parameters, [0x10, 0x09, 0x04])
+    }
+
     func testParseReportThatIncludesReportID() {
         let packet = HIDPPPacket.parse(
             Data([0x11, 0x02, 0x07, 0x1A, 0xFF, 0xFE, 0x00])
@@ -52,6 +92,33 @@ final class HIDPPPacketTests: XCTestCase {
 
         XCTAssertTrue(packet?.isError == true)
         XCTAssertEqual(packet?.errorCode, 0x02)
+    }
+
+    func testDeviceConnectionNotificationReportsEstablishedLink() {
+        let packet = HIDPPPacket.parse(
+            Data([0x10, 0x02, 0x41, 0x04, 0x21, 0x2D, 0x40])
+        )
+
+        XCTAssertTrue(packet?.isDeviceConnectionNotification == true)
+        XCTAssertTrue(packet?.reportsEstablishedLink == true)
+    }
+
+    func testDeviceConnectionNotificationReportsMissingLink() {
+        let packet = HIDPPPacket.parse(
+            Data([0x10, 0x02, 0x41, 0x04, 0x61, 0x2D, 0x40])
+        )
+
+        XCTAssertTrue(packet?.isDeviceConnectionNotification == true)
+        XCTAssertFalse(packet?.reportsEstablishedLink == true)
+    }
+
+    func testFeatureNotificationIsNotADeviceConnectionNotification() {
+        let packet = HIDPPPacket.parse(
+            Data([0x11, 0x02, 0x07, 0x00, 0x01, 0xA0, 0x00])
+        )
+
+        XCTAssertFalse(packet?.isDeviceConnectionNotification == true)
+        XCTAssertFalse(packet?.reportsEstablishedLink == true)
     }
 
     func testHapticOffRequestClearsEnableBitAndRetainsValidIntensity() {
