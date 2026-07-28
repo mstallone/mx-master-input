@@ -9,7 +9,6 @@ enum PanelAction: String, Equatable, Sendable {
 struct ActionResult: Equatable, Sendable {
     let action: PanelAction
     let succeeded: Bool
-    let secureInputWasEnabled: Bool
 }
 
 final class SystemActionController: @unchecked Sendable {
@@ -36,7 +35,6 @@ final class SystemActionController: @unchecked Sendable {
     private var usesKeyboardFallback = false
     private var swipeProgress = 0.0
     private var swipePostsSucceeded = true
-    private var swipeBeganWithSecureInput = false
     private var lastPhysicalDirection = GestureDirection.right
 
     init(
@@ -107,7 +105,6 @@ final class SystemActionController: @unchecked Sendable {
             swipeAxis = axis
             swipeProgress = progressDelta(for: delta, axis: axis)
             lastPhysicalDirection = direction(for: delta, axis: axis)
-            swipeBeganWithSecureInput = secureInputEnabled
             swipePostsSucceeded = postDockSwipe(
                 axis,
                 swipeProgress,
@@ -147,13 +144,11 @@ final class SystemActionController: @unchecked Sendable {
                     phase.rawValue
                 ) && swipePostsSucceeded
             }
-            let secureInputWasEnabled = swipeBeganWithSecureInput
             resetGestureState()
             completion(
                 ActionResult(
                     action: action,
-                    succeeded: succeeded,
-                    secureInputWasEnabled: secureInputWasEnabled
+                    succeeded: succeeded
                 )
             )
 
@@ -251,7 +246,6 @@ final class SystemActionController: @unchecked Sendable {
         usesKeyboardFallback = false
         swipeProgress = 0
         swipePostsSucceeded = true
-        swipeBeganWithSecureInput = false
     }
 
     private func submit(
@@ -260,12 +254,10 @@ final class SystemActionController: @unchecked Sendable {
         completion: @escaping @Sendable (ActionResult) -> Void
     ) {
         outputQueue.async { [self] in
-            let secureInputWasEnabled = secureInputEnabled
             completion(
                 ActionResult(
                     action: action,
-                    succeeded: postControlArrow(keyCode),
-                    secureInputWasEnabled: secureInputWasEnabled
+                    succeeded: postControlArrow(keyCode)
                 )
             )
         }

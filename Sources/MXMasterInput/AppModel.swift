@@ -12,7 +12,6 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastAction = "None"
     @Published private(set) var hapticStatus = "Unknown"
     @Published private(set) var secureInputEnabled = false
-    @Published private(set) var secureInputVerification = "Not tested this run"
     @Published private(set) var hasPostEventAccess = false
     @Published var launchAtLogin = false
 
@@ -168,10 +167,5 @@ final class AppModel: ObservableObject {
         lastAction = result.succeeded
             ? result.action.rawValue
             : "\(result.action.rawValue) failed"
-
-        if result.succeeded, result.secureInputWasEnabled {
-            secureInputVerification =
-                "Submitted — system event posted while enabled"
-        }
     }
 }
