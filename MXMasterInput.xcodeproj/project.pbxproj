@@ -26,12 +26,14 @@
 		6BF95B299D531CEFF852380E /* SecureInputHardwareProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */; };
 		6DCD9E3DCCF473366AE8A91C /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C6CB1B338CC88EA3C5CBE4 /* AppModel.swift */; };
 		6E30DBDE70BCD074257EBD04 /* ContinuousGestureRecognizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AFDF8704F72D3C1D38EEE0 /* ContinuousGestureRecognizerTests.swift */; };
+		78D00AF3A650DC4983627C19 /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF80F29592406C7F7664DC26 /* AppUpdater.swift */; };
 		916BD598B3B9640CC684C292 /* MXMasterRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91AD212CA1B5967D445BA982 /* MXMasterRuntime.swift */; };
 		ADDEEB28AB866ACC0B633442 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A2D88DB57C3D15E4703B7005 /* IOKit.framework */; };
 		B73B4B34ECE4F7119A095B3A /* MXNativeBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 0CFE2CFD99A371D6A5D0D4C6 /* MXNativeBridge.m */; };
 		C75E8103BC7CB5A0DC04D495 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E57549B452778B6D03DE41CA /* ApplicationServices.framework */; };
 		C7E3D915D580D263D53C0A9C /* HIDPPPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D1BFEA6F73571C940134D1 /* HIDPPPacket.swift */; };
 		CA38D57154E5F5B7A0CE9642 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ECE80ECD3D7A371D1A80C88E /* AppKit.framework */; };
+		D28E9DA3D3A9956A242B4271 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 199EAD1F10245F0B0E282073 /* Sparkle */; };
 		DAB28CA1148E866B7E578FAF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89745B8445A57933C2DE334A /* ContentView.swift */; };
 		E827B99378DCF7F485A5366E /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E57549B452778B6D03DE41CA /* ApplicationServices.framework */; };
 		F650C242B45B2E3BBB9CBE56 /* MXMasterInputApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C2D1CE837377227F90EBDCE /* MXMasterInputApp.swift */; };
@@ -62,6 +64,7 @@
 		E7097C9039F4425B01CA17EB /* ContinuousGestureRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousGestureRecognizer.swift; sourceTree = "<group>"; };
 		EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemActionControllerTests.swift; sourceTree = "<group>"; };
 		ECE80ECD3D7A371D1A80C88E /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		EF80F29592406C7F7664DC26 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		FDD748A4751D2210BA24C541 /* MXNativeBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MXNativeBridge.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -75,6 +78,7 @@
 				56736A760CC770D42C06C128 /* Carbon.framework in Frameworks */,
 				1D03F8A94012F3B2B324AB99 /* IOKit.framework in Frameworks */,
 				0689F38D02A3742D7236673A /* ServiceManagement.framework in Frameworks */,
+				D28E9DA3D3A9956A242B4271 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,6 +107,7 @@
 			isa = PBXGroup;
 			children = (
 				90C6CB1B338CC88EA3C5CBE4 /* AppModel.swift */,
+				EF80F29592406C7F7664DC26 /* AppUpdater.swift */,
 				CAC87ADD1CF153EDF904165D /* Assets.xcassets */,
 				89745B8445A57933C2DE334A /* ContentView.swift */,
 				01DFF8E42F318388510E9119 /* Info.plist */,
@@ -236,6 +241,7 @@
 			);
 			name = MXMasterInput;
 			packageProductDependencies = (
+				199EAD1F10245F0B0E282073 /* Sparkle */,
 			);
 			productName = MXMasterInput;
 			productReference = 6DDBFAF631A40FEA77754B4D /* MXMasterInput.app */;
@@ -264,6 +270,9 @@
 			);
 			mainGroup = DFC00C752DD5CA26D6E2B911;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				895038E438B38D9C3F666BF1 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B96D53B6805C1A6178DDA330 /* Products */;
 			projectDirPath = "";
@@ -292,6 +301,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6DCD9E3DCCF473366AE8A91C /* AppModel.swift in Sources */,
+				78D00AF3A650DC4983627C19 /* AppUpdater.swift in Sources */,
 				DAB28CA1148E866B7E578FAF /* ContentView.swift in Sources */,
 				1FD4C4177ABAF7145738347F /* ContinuousGestureRecognizer.swift in Sources */,
 				C7E3D915D580D263D53C0A9C /* HIDPPPacket.swift in Sources */,
@@ -330,6 +340,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.1.1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/MXMasterInput/Info.plist;
@@ -505,6 +516,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.1.1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/MXMasterInput/Info.plist;
@@ -550,6 +562,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		895038E438B38D9C3F666BF1 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.9.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		199EAD1F10245F0B0E282073 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 895038E438B38D9C3F666BF1 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DE2240A455264D3DFD5FE6A0 /* Project object */;
 }

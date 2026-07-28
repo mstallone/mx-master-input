@@ -81,14 +81,21 @@ xcodebuild \
   build test
 ```
 
-## Releases
+## Updates and releases
+
+The app uses [Sparkle 2](https://sparkle-project.org/) to check for updates
+daily and install them automatically. **Check for Updates…** in the menu-bar
+menu starts a check immediately.
 
 Version tags such as `v0.1.1` run the GitHub release workflow. It tests the app,
 builds a universal `arm64`/`x86_64` archive, signs it with NextByte's Developer
 ID Application certificate, submits it to Apple notarization, staples the
 ticket, and verifies it with both Gatekeeper and `syspolicy_check` before
-publishing the ZIP and its SHA-256 checksum. The workflow rejects unsigned,
-Apple Development-signed, unnotarized, or wrongly versioned builds.
+publishing the ZIP, its SHA-256 checksum, and a Sparkle-signed `appcast.xml`.
+The appcast is served from the latest GitHub Release, so the update system does
+not require a separate web host or GitHub Pages deployment. The workflow
+rejects unsigned, Apple Development-signed, unnotarized, wrongly versioned, or
+Sparkle-unsigned builds.
 
 The repository needs these Actions secrets before a maintainer pushes a version
 tag:
@@ -98,6 +105,15 @@ tag:
 - `APPLE_NOTARY_PRIVATE_KEY_BASE64`
 - `APPLE_NOTARY_KEY_ID`
 - `APPLE_NOTARY_ISSUER_ID`
+- `SPARKLE_ED_PRIVATE_KEY`
+
+`SPARKLE_ED_PRIVATE_KEY` is the private EdDSA key exported by Sparkle's
+`generate_keys` tool. Its public half is committed in `Info.plist`. The private
+key is also stored locally in the macOS Keychain under the
+`com.mattstallone.mxmasterinput` Sparkle account. It must remain in Actions
+secrets (and a secure backup), because losing or replacing both it and the
+Developer ID identity can prevent installed copies from accepting future
+updates.
 
 ## How it works
 

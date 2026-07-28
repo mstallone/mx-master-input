@@ -5,6 +5,11 @@ options:
   deploymentTarget:
     macOS: "15.0"
 
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.9.4
+
 settings:
   base:
     CLANG_ENABLE_MODULES: YES
@@ -23,11 +28,16 @@ targets:
       properties:
         CFBundleDisplayName: MX Master Input
         CFBundleShortVersionString: "0.1.1"
-        CFBundleVersion: "1"
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.utilities
         LSUIElement: true
+        SUAutomaticallyUpdate: true
+        SUEnableAutomaticChecks: true
+        SUFeedURL: https://github.com/mstallone/mx-master-input/releases/latest/download/appcast.xml
+        SUPublicEDKey: UABTvdTVnMHNzqLh/IThuv5qtN7eCBK2dD1ztAtXk/o=
     settings:
       base:
+        CURRENT_PROJECT_VERSION: "0.1.1"
         PRODUCT_BUNDLE_IDENTIFIER: com.mattstallone.mxmasterinput
         PRODUCT_NAME: MXMasterInput
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -41,6 +51,7 @@ targets:
       - sdk: Carbon.framework
       - sdk: IOKit.framework
       - sdk: ServiceManagement.framework
+      - package: Sparkle
 
   MXMasterInputTests:
     type: bundle.unit-test

@@ -77,6 +77,7 @@ trap cleanup EXIT
 build_settings=(
   "ARCHS=arm64 x86_64"
   "ONLY_ACTIVE_ARCH=NO"
+  "CURRENT_PROJECT_VERSION=$RELEASE_VERSION"
   "CODE_SIGN_STYLE=Manual"
   "CODE_SIGN_IDENTITY=$SIGNING_IDENTITY"
   "DEVELOPMENT_TEAM=$EXPECTED_TEAM_ID"
@@ -103,6 +104,15 @@ printf 'Archiving %s %s for arm64 and x86_64...\n' "$PRODUCT_NAME" "$RELEASE_VER
   archive
 
 [[ -d "$APP_PATH" ]] || fail "archive did not contain $PRODUCT_NAME.app"
+
+BUILT_VERSION="$(
+  /usr/libexec/PlistBuddy \
+    -c 'Print:CFBundleVersion' \
+    "$APP_PATH/Contents/Info.plist"
+)"
+readonly BUILT_VERSION
+[[ "$BUILT_VERSION" == "$RELEASE_VERSION" ]] ||
+  fail "built bundle version $BUILT_VERSION does not match $RELEASE_VERSION"
 
 readonly EXECUTABLE_PATH="$APP_PATH/Contents/MacOS/$PRODUCT_NAME"
 ARCHITECTURES="$(/usr/bin/lipo -archs "$EXECUTABLE_PATH")"
