@@ -16,7 +16,7 @@ release.
 - Apple silicon Mac running macOS 26.5.2 (`25F84`)
 - Accessibility permission for posting system actions
 
-Version 0.1.2 is validated with Xcode 26.6 and Swift 6.3.
+Version 0.1.3 is validated with Xcode 26.6 and Swift 6.3.
 
 ## Controls
 
@@ -68,7 +68,7 @@ The app uses [Sparkle 2](https://sparkle-project.org/) to check for updates
 daily and install them automatically. **Check for Updates…** in the menu-bar
 menu starts a check immediately.
 
-Version tags such as `v0.1.2` run the GitHub release workflow. It tests, signs,
+Version tags such as `v0.1.3` run the GitHub release workflow. It tests, signs,
 notarizes, and verifies a universal app before publishing the ZIP, SHA-256
 checksum, and Sparkle-signed `appcast.xml` to GitHub Releases.
 
