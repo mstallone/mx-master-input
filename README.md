@@ -99,9 +99,10 @@ converts horizontal and vertical Sense Panel motion into the private
 `DockSwipe` event used by macOS.
 
 Because macOS does not publish an API for injecting progressive gestures, this
-event format is OS-version-sensitive. The private path is validated on macOS
-26.5.2, disabled on macOS 27, and replaced there with standard Control-arrow
-actions.
+event format is OS-version-sensitive. macOS 26 uses private CGEvent fields;
+macOS 27 uses an attached HID gesture event instead. If the required runtime
+API is unavailable, or a newer major macOS release has not been validated, the
+app falls back to standard Control-arrow actions when the panel is released.
 
 Direct HID++ input continues while Secure Event Input is enabled. Accessibility
 permission is still required to submit Mission Control and Space actions. Logi

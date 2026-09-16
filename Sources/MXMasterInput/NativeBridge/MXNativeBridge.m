@@ -1,4 +1,5 @@
 #import "MXNativeBridge.h"
+#import "MXDockSwipeEvent.h"
 
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
@@ -590,10 +591,10 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     static NSInteger activeType = 0;
     static double lastProgress = 0;
     static double lastDelta = 0;
+    static BOOL naturalScrolling = YES;
 
-    if (@available(macOS 27.0, *)) {
-        // macOS 27 moved DockSwipe state into an attached IOHIDEvent. Falling
-        // back is safer than posting the obsolete field layout.
+    // Private gesture layouts must be revalidated for each new major OS.
+    if (@available(macOS 28.0, *)) {
         return NO;
     }
 
@@ -620,6 +621,12 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     }
 
     if (phase == 1) {
+        // Freeze this preference for the gesture so changing system settings
+        // mid-swipe cannot invert an in-flight transition. An unset global
+        // preference means Natural Scrolling is enabled.
+        NSNumber *direction = [NSUserDefaults.standardUserDefaults
+            objectForKey:@"com.apple.swipescrolldirection"];
+        naturalScrolling = direction == nil ? YES : direction.boolValue;
         activeType = type;
         lastProgress = progress;
         lastDelta = progress;
@@ -646,6 +653,23 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     const BOOL isEnding = postedPhase == 4 || postedPhase == 8;
     const double exitSpeed =
         isEnding && activeType == type ? lastDelta * 100 : 0;
+
+    if (@available(macOS 27.0, *)) {
+        CGEventRef event = MXCreateHIDDockSwipeEvent(
+            progress, type, postedPhase, exitSpeed, naturalScrolling
+        );
+        if (!event) {
+            return NO;
+        }
+        CGEventPost(kCGSessionEventTap, event);
+        CFRelease(event);
+        if (isEnding) {
+            activeType = 0;
+            lastProgress = 0;
+            lastDelta = 0;
+        }
+        return YES;
+    }
 
     CGEventRef gestureEvent = CGEventCreate(NULL);
     CGEventRef dockEvent = CGEventCreate(NULL);
