@@ -1,4 +1,5 @@
 #import "MXNativeBridge.h"
+#import "MXDockSwipeEvent.h"
 
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
@@ -591,12 +592,6 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     static double lastProgress = 0;
     static double lastDelta = 0;
 
-    if (@available(macOS 27.0, *)) {
-        // macOS 27 moved DockSwipe state into an attached IOHIDEvent. Falling
-        // back is safer than posting the obsolete field layout.
-        return NO;
-    }
-
     // DockSwipe motion types: horizontal Space switching or vertical Mission
     // Control/App Exposé.
     if (type != 1 && type != 2) {
@@ -646,6 +641,23 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     const BOOL isEnding = postedPhase == 4 || postedPhase == 8;
     const double exitSpeed =
         isEnding && activeType == type ? lastDelta * 100 : 0;
+
+    if (@available(macOS 27.0, *)) {
+        CGEventRef event = MXCreateHIDDockSwipeEvent(
+            progress, type, postedPhase, exitSpeed
+        );
+        if (!event) {
+            return NO;
+        }
+        CGEventPost(kCGSessionEventTap, event);
+        CFRelease(event);
+        if (isEnding) {
+            activeType = 0;
+            lastProgress = 0;
+            lastDelta = 0;
+        }
+        return YES;
+    }
 
     CGEventRef gestureEvent = CGEventCreate(NULL);
     CGEventRef dockEvent = CGEventCreate(NULL);
