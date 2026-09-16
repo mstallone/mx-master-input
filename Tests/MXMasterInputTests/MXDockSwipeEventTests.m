@@ -28,7 +28,18 @@
                    axis:(NSInteger)axis
                   phase:(NSInteger)phase
                velocity:(double)velocity {
-    CGEventRef event = MXCreateHIDDockSwipeEvent(progress, axis, phase, velocity);
+    return [self payloadForProgress:progress axis:axis phase:phase
+                          velocity:velocity naturalScrolling:NO];
+}
+
+- (id<MXHIDEventInspection>)payloadForProgress:(double)progress
+                   axis:(NSInteger)axis
+                  phase:(NSInteger)phase
+               velocity:(double)velocity
+       naturalScrolling:(BOOL)naturalScrolling {
+    CGEventRef event = MXCreateHIDDockSwipeEvent(
+        progress, axis, phase, velocity, naturalScrolling
+    );
     XCTAssertTrue(event != NULL);
     if (!event) return nil;
     XCTAssertEqual(CGEventGetType(event), (CGEventType)30);
@@ -72,13 +83,34 @@
     }
 }
 
+- (void)testNaturalScrollingConvertsBothAxesWithoutChangingVelocity {
+    for (NSNumber *axis in @[@1, @2]) {
+        for (NSNumber *natural in @[@YES, @NO]) {
+            // Positive horizontal input means next Space; negative vertical
+            // input means Mission Control. Both need the same normalization.
+            double progress = axis.integerValue == 1 ? 0.5 : -0.5;
+            id<MXHIDEventInspection> payload = [self
+                payloadForProgress:progress axis:axis.integerValue phase:4
+                velocity:2.5 naturalScrolling:natural.boolValue];
+            double expected = natural.boolValue ? -progress : progress;
+            XCTAssertEqualWithAccuracy(
+                [payload doubleValueForField:(23 << 16) | 2], expected, 0.00001
+            );
+            id<MXHIDEventInspection> velocity = [payload children].firstObject;
+            XCTAssertEqualWithAccuracy(
+                [velocity doubleValueForField:(9 << 16) | 0], 2.5, 0.00001
+            );
+        }
+    }
+}
+
 - (void)testRejectsInvalidGestureParameters {
-    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 0, 1, 0) == NULL);
-    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 3, 1, 0) == NULL);
-    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 1, 0, 0) == NULL);
-    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 1, 3, 0) == NULL);
-    XCTAssertTrue(MXCreateHIDDockSwipeEvent(NAN, 1, 1, 0) == NULL);
-    XCTAssertTrue(MXCreateHIDDockSwipeEvent(INFINITY, 1, 1, 0) == NULL);
-    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 1, 4, INFINITY) == NULL);
+    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 0, 1, 0, YES) == NULL);
+    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 3, 1, 0, YES) == NULL);
+    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 1, 0, 0, YES) == NULL);
+    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 1, 3, 0, YES) == NULL);
+    XCTAssertTrue(MXCreateHIDDockSwipeEvent(NAN, 1, 1, 0, YES) == NULL);
+    XCTAssertTrue(MXCreateHIDDockSwipeEvent(INFINITY, 1, 1, 0, YES) == NULL);
+    XCTAssertTrue(MXCreateHIDDockSwipeEvent(0.2, 1, 4, INFINITY, YES) == NULL);
 }
 @end

@@ -7,5 +7,6 @@ CGEventRef _Nullable MXCreateHIDDockSwipeEvent(
     double progress,
     NSInteger type,
     NSInteger phase,
-    double exitSpeed
+    double exitSpeed,
+    BOOL naturalScrolling
 ) CF_RETURNS_RETAINED;

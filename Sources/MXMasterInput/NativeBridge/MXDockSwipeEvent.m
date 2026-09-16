@@ -22,7 +22,8 @@ CGEventRef MXCreateHIDDockSwipeEvent(
     double progress,
     NSInteger type,
     NSInteger phase,
-    double exitSpeed
+    double exitSpeed,
+    BOOL naturalScrolling
 ) {
     if ((type != 1 && type != 2)
         || (phase != 1 && phase != 2 && phase != 4 && phase != 8)
@@ -72,7 +73,12 @@ CGEventRef MXCreateHIDDockSwipeEvent(
     swipe.options = (uint32_t)phase << 24;
     [swipe setIntegerValue:type forField:dockFields | 1]; // motion axis
     [swipe setIntegerValue:3 forField:dockFields | 5]; // Dock primary flavor
-    [swipe setDoubleValue:progress forField:dockFields | 2];
+    // Unlike the legacy CGEvent fields, Dock applies the system's natural
+    // scrolling inversion to HID progress. Undo it to keep our fixed panel
+    // mapping (left -> next Space, up -> Mission Control). Velocity retains
+    // the legacy sign, as in the real gesture envelope.
+    const double hidProgress = naturalScrolling ? -progress : progress;
+    [swipe setDoubleValue:hidProgress forField:dockFields | 2];
 
     if (phase == 4 || phase == 8) {
         HIDEvent *velocity = [[eventClass alloc] initWithType:velocityType

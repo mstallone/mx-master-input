@@ -591,6 +591,7 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     static NSInteger activeType = 0;
     static double lastProgress = 0;
     static double lastDelta = 0;
+    static BOOL naturalScrolling = YES;
 
     // DockSwipe motion types: horizontal Space switching or vertical Mission
     // Control/App Exposé.
@@ -615,6 +616,12 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     }
 
     if (phase == 1) {
+        // Freeze this preference for the gesture so changing system settings
+        // mid-swipe cannot invert an in-flight transition. An unset global
+        // preference means Natural Scrolling is enabled.
+        NSNumber *direction = [NSUserDefaults.standardUserDefaults
+            objectForKey:@"com.apple.swipescrolldirection"];
+        naturalScrolling = direction == nil ? YES : direction.boolValue;
         activeType = type;
         lastProgress = progress;
         lastDelta = progress;
@@ -644,7 +651,7 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
 
     if (@available(macOS 27.0, *)) {
         CGEventRef event = MXCreateHIDDockSwipeEvent(
-            progress, type, postedPhase, exitSpeed
+            progress, type, postedPhase, exitSpeed, naturalScrolling
         );
         if (!event) {
             return NO;
