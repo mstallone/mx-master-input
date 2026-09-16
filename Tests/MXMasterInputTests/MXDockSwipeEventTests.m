@@ -20,8 +20,8 @@
 
 - (void)setUp {
     [super setUp];
-    XCTSkipIf(NSProcessInfo.processInfo.operatingSystemVersion.majorVersion < 27,
-              @"HID-backed Dock gestures are used on macOS 27 and later.");
+    XCTSkipIf(NSProcessInfo.processInfo.operatingSystemVersion.majorVersion != 27,
+              @"HID-backed Dock gestures are validated only on macOS 27.");
 }
 
 - (id<MXHIDEventInspection>)payloadForProgress:(double)progress

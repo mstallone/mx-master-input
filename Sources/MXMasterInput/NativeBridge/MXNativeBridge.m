@@ -593,6 +593,11 @@ BOOL MXPostDockSwipe(double progress, NSInteger type, NSInteger phase) {
     static double lastDelta = 0;
     static BOOL naturalScrolling = YES;
 
+    // Private gesture layouts must be revalidated for each new major OS.
+    if (@available(macOS 28.0, *)) {
+        return NO;
+    }
+
     // DockSwipe motion types: horizontal Space switching or vertical Mission
     // Control/App Exposé.
     if (type != 1 && type != 2) {
