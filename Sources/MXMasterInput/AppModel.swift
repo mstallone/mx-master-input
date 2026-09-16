@@ -17,20 +17,10 @@ final class AppModel: ObservableObject {
     @Published var launchAtLogin = false
 
     private let runtime = MXMasterRuntime.shared
-    private var secureInputTimer: Timer?
 
     init() {
         refreshPermissionState()
         refreshLaunchAtLogin()
-
-        secureInputTimer = Timer.scheduledTimer(
-            withTimeInterval: 1,
-            repeats: true
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.refreshPermissionState()
-            }
-        }
 
         if UserDefaults.standard.bool(forKey: "autoEnable"),
            hasPostEventAccess {
@@ -135,8 +125,14 @@ final class AppModel: ObservableObject {
     }
 
     func refreshPermissionState() {
-        hasPostEventAccess = runtime.actions.hasPostEventAccess
-        secureInputEnabled = runtime.actions.secureInputEnabled
+        let postEventAccess = runtime.actions.hasPostEventAccess
+        if hasPostEventAccess != postEventAccess {
+            hasPostEventAccess = postEventAccess
+        }
+        let secureInput = runtime.actions.secureInputEnabled
+        if secureInputEnabled != secureInput {
+            secureInputEnabled = secureInput
+        }
     }
 
     private func refreshLaunchAtLogin() {
@@ -162,7 +158,9 @@ final class AppModel: ObservableObject {
         case .panelUp:
             lastInput = "Panel up"
         case let .direction(direction):
-            lastInput = direction.rawValue
+            if lastInput != direction.rawValue {
+                lastInput = direction.rawValue
+            }
         case .tap:
             lastInput = "tap"
         case let .battery(percent):
@@ -173,8 +171,11 @@ final class AppModel: ObservableObject {
     }
 
     private func record(_ result: ActionResult) {
-        lastAction = result.succeeded
+        let action = result.succeeded
             ? result.action.rawValue
             : "\(result.action.rawValue) failed"
+        if lastAction != action {
+            lastAction = action
+        }
     }
 }

@@ -94,6 +94,21 @@ struct ContentView: View {
         .formStyle(.grouped)
         .frame(width: 520, height: 620)
         .padding()
+        .task {
+            // Poll diagnostics only while Settings is shown. SwiftUI cancels
+            // this task when the window closes; the HID session stays active.
+            while !Task.isCancelled {
+                model.refreshPermissionState()
+                do {
+                    try await Task.sleep(
+                        for: .seconds(1),
+                        tolerance: .milliseconds(200)
+                    )
+                } catch {
+                    return
+                }
+            }
+        }
     }
 
     private func mapping(_ input: String, _ output: String) -> some View {
