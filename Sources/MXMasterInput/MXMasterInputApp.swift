@@ -22,6 +22,9 @@ struct MXMasterInputApp: App {
                 Text(model.status)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Text("Battery: \(model.batteryStatus)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Divider()
 

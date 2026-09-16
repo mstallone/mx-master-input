@@ -35,7 +35,7 @@ panel, and each swipe locks to its initial horizontal or vertical axis.
 Mission Control taps and the compatibility fallback use the Control-arrow
 shortcuts configured in macOS Keyboard settings.
 
-Settings shows the connected mouse's battery percentage while the app is
+Settings and the menu dropdown show the mouse's battery percentage while the app is
 enabled. The reading updates when the mouse reports a change and after it
 wakes. If the mouse cannot report a percentage, the battery reads **Unknown**.
 
