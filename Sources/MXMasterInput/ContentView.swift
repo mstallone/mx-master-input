@@ -9,6 +9,7 @@ struct ContentView: View {
             Section("Device") {
                 LabeledContent("Status", value: model.status)
                 LabeledContent("Device", value: model.deviceName)
+                LabeledContent("Battery", value: model.batteryStatus)
                 LabeledContent("Haptic engine", value: model.hapticStatus)
                 LabeledContent(
                     "Accessibility",
@@ -91,7 +92,7 @@ struct ContentView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 590)
+        .frame(width: 520, height: 620)
         .padding()
     }
 

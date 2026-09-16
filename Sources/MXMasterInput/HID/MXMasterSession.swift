@@ -58,6 +58,9 @@ final class MXMasterSession: @unchecked Sendable {
     private var deviceIndex: UInt8 = 0
     private var reprogrammableControlsIndex: UInt8?
     private var hapticIndex: UInt8?
+    private var batteryIndex: UInt8?
+    private var batteryFeature: BatteryFeature?
+    private var batterySupportsPercentage = false
     private var panelHeld = false
     private var panelDiverted = false
     private var activeMode = false
@@ -235,7 +238,8 @@ final class MXMasterSession: @unchecked Sendable {
                     controls: controls,
                     hapticSupported: hapticIndex != nil,
                     hapticDisabled: hapticDisabled,
-                    panelDiverted: panelDiverted
+                    panelDiverted: panelDiverted,
+                    batteryPercent: queryBatteryPercent()
                 )
                 emit(.connected(connected))
                 return connected
@@ -279,6 +283,9 @@ final class MXMasterSession: @unchecked Sendable {
         connection = nil
         reprogrammableControlsIndex = nil
         hapticIndex = nil
+        batteryIndex = nil
+        batteryFeature = nil
+        batterySupportsPercentage = false
         activeMode = false
         started = false
         emit(.disconnected)
@@ -350,6 +357,87 @@ final class MXMasterSession: @unchecked Sendable {
         return String(bytes: nameBytes.prefix(nameLength), encoding: .ascii)?
             .trimmingCharacters(in: .controlCharacters)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    enum BatteryFeature: UInt16 {
+        case unified = 0x1004
+        case levelStatus = 0x1000
+
+        var statusFunction: UInt8 { self == .unified ? 1 : 0 }
+    }
+
+    private func queryBatteryPercent() -> Int? {
+        if batteryIndex == nil {
+            for feature in [BatteryFeature.unified, .levelStatus] {
+                if let index = findFeature(feature.rawValue, timeout: 0.8) {
+                    batteryIndex = index
+                    batteryFeature = feature
+                    break
+                }
+            }
+        }
+
+        guard let batteryIndex, let batteryFeature else {
+            return nil
+        }
+
+        // Unified battery devices can expose only coarse levels. Check the
+        // state-of-charge capability before interpreting a percentage, so a
+        // supported zero-percent reading is distinct from an unknown level.
+        if batteryFeature == .unified, !batterySupportsPercentage {
+            guard let capabilities = request(
+                featureIndex: batteryIndex,
+                function: 0,
+                parameters: [],
+                timeout: 0.8
+            ), Self.supportsBatteryPercentage(capabilities.parameters) else {
+                return nil
+            }
+        }
+        batterySupportsPercentage = true
+
+        guard let response = request(
+            featureIndex: batteryIndex,
+            function: batteryFeature.statusFunction,
+            parameters: [],
+            timeout: 0.8
+        ) else {
+            return nil
+        }
+        return Self.batteryPercent(from: response.parameters, feature: batteryFeature)
+    }
+
+    static func supportsBatteryPercentage(_ capabilities: [UInt8]) -> Bool {
+        capabilities.count >= 2 && capabilities[1] & 0x02 != 0
+    }
+
+    static func batteryPercent(
+        from parameters: [UInt8],
+        feature: BatteryFeature
+    ) -> Int? {
+        let minimumLength = feature == .unified ? 4 : 3
+        guard parameters.count >= minimumLength,
+              let level = parameters.first,
+              level <= 100,
+              feature == .unified || level != 0 else {
+            return nil
+        }
+        return Int(level)
+    }
+
+    static func batteryEvent(
+        from packet: HIDPPPacket,
+        deviceIndex: UInt8,
+        featureIndex: UInt8,
+        feature: BatteryFeature
+    ) -> MXMasterEvent? {
+        guard packet.deviceIndex == deviceIndex,
+              packet.featureIndex == featureIndex,
+              packet.function == 0,
+              packet.softwareID == 0 else {
+            return nil
+        }
+        return .battery(percent: batteryPercent(from: packet.parameters, feature: feature))
     }
 
     private func discoverControls() -> [ReprogrammableControl] {
@@ -578,8 +666,24 @@ final class MXMasterSession: @unchecked Sendable {
 
     private func processUnsolicited(_ packet: HIDPPPacket) {
         if packet.deviceIndex == deviceIndex,
-           packet.reportsEstablishedLink {
-            scheduleConfigurationRecovery()
+           packet.isDeviceConnectionNotification {
+            if packet.reportsEstablishedLink {
+                scheduleConfigurationRecovery()
+            } else {
+                emit(.battery(percent: nil))
+            }
+            return
+        }
+
+        if batterySupportsPercentage,
+           let batteryIndex, let batteryFeature,
+           let event = Self.batteryEvent(
+               from: packet,
+               deviceIndex: deviceIndex,
+               featureIndex: batteryIndex,
+               feature: batteryFeature
+           ) {
+            emit(event)
             return
         }
 
@@ -760,6 +864,7 @@ final class MXMasterSession: @unchecked Sendable {
             panelDiverted = true
             configurationRecoveryScheduled = false
             emit(.status("Enabled"))
+            emit(.battery(percent: queryBatteryPercent()))
             return
         }
 

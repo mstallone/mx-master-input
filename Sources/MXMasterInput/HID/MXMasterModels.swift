@@ -37,6 +37,7 @@ struct ConnectedMXMaster: Equatable, Sendable {
     let hapticSupported: Bool
     let hapticDisabled: Bool
     let panelDiverted: Bool
+    let batteryPercent: Int?
 }
 
 enum MXMasterEvent: Equatable, Sendable {
@@ -47,6 +48,7 @@ enum MXMasterEvent: Equatable, Sendable {
     case panelUp
     case direction(GestureDirection)
     case tap
+    case battery(percent: Int?)
     case error(String)
 }
 

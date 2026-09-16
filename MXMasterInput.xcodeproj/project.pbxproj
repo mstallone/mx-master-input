@@ -21,6 +21,7 @@
 		4C51C66573BCE73482822165 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89B09753B9F619A3F0B4D9DB /* Carbon.framework */; };
 		4E5187552BF55A076F0AADA4 /* SystemActionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */; };
 		56736A760CC770D42C06C128 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89B09753B9F619A3F0B4D9DB /* Carbon.framework */; };
+		5D8337ABE4EE523EBD51529E /* MXMasterSessionBatteryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02ABB55A13A5F2C5EA19E932 /* MXMasterSessionBatteryTests.swift */; };
 		67A737BEA410154843F739A1 /* MXMasterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AE164A088EDEA5D1B102B4 /* MXMasterModels.swift */; };
 		67BF7B23D8F5BD5BF5007EE8 /* SystemActionControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */; };
 		6BF95B299D531CEFF852380E /* SecureInputHardwareProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */; };
@@ -42,6 +43,7 @@
 
 /* Begin PBXFileReference section */
 		01DFF8E42F318388510E9119 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		02ABB55A13A5F2C5EA19E932 /* MXMasterSessionBatteryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterSessionBatteryTests.swift; sourceTree = "<group>"; };
 		032E143D4B316AF0895DE7B5 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		0CFE2CFD99A371D6A5D0D4C6 /* MXNativeBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MXNativeBridge.m; sourceTree = "<group>"; };
 		0E7C8C8C5D73CFFB1640112C /* HIDPPPacketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDPPPacketTests.swift; sourceTree = "<group>"; };
@@ -188,6 +190,7 @@
 			children = (
 				38AFDF8704F72D3C1D38EEE0 /* ContinuousGestureRecognizerTests.swift */,
 				0E7C8C8C5D73CFFB1640112C /* HIDPPPacketTests.swift */,
+				02ABB55A13A5F2C5EA19E932 /* MXMasterSessionBatteryTests.swift */,
 				94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */,
 				EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */,
 			);
@@ -324,6 +327,7 @@
 				372FD6B314164E288EF2FBB9 /* HIDPPPacketTests.swift in Sources */,
 				67A737BEA410154843F739A1 /* MXMasterModels.swift in Sources */,
 				452FAFAD1DE5438503E9FA3A /* MXMasterSession.swift in Sources */,
+				5D8337ABE4EE523EBD51529E /* MXMasterSessionBatteryTests.swift in Sources */,
 				B73B4B34ECE4F7119A095B3A /* MXNativeBridge.m in Sources */,
 				6BF95B299D531CEFF852380E /* SecureInputHardwareProbeTests.swift in Sources */,
 				4E5187552BF55A076F0AADA4 /* SystemActionController.swift in Sources */,
