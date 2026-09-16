@@ -1,6 +1,12 @@
 import Foundation
+import OSLog
 
 final class MXMasterSession: @unchecked Sendable {
+    private static let logger = Logger(
+        subsystem: "com.mattstallone.mxmasterinput",
+        category: "HID"
+    )
+
     private enum PendingResponse {
         case hidpp20(
             deviceIndex: UInt8,
@@ -128,6 +134,7 @@ final class MXMasterSession: @unchecked Sendable {
         emit(.status("Searching for the Logitech HID++ interface…"))
 
         let candidates = MXHIDConnection.logitechVendorDevices()
+        Self.logger.notice("Discovery found \(candidates.count) HID++ interfaces")
         guard !candidates.isEmpty else {
             throw MXMasterSessionError.noVendorInterface
         }
@@ -135,6 +142,7 @@ final class MXMasterSession: @unchecked Sendable {
         var lastOpenError: String?
 
         for candidate in candidates {
+            Self.logger.notice("Opening product=\(candidate.productID) usagePage=\(candidate.usagePage) usage=\(candidate.usage) transport=\(candidate.transport, privacy: .public)")
             let candidateConnection = MXHIDConnection(deviceInfo: candidate)
             do {
                 try candidateConnection.open { [weak self] report in
@@ -142,6 +150,7 @@ final class MXMasterSession: @unchecked Sendable {
                 }
             } catch {
                 lastOpenError = error.localizedDescription
+                Self.logger.error("HID open failed: \(error.localizedDescription, privacy: .public)")
                 continue
             }
 
@@ -155,15 +164,19 @@ final class MXMasterSession: @unchecked Sendable {
 
             for index in indexes {
                 deviceIndex = index
+                Self.logger.info("Probing receiver slot \(index)")
                 guard let reprogIndex = findFeature(
                     Feature.reprogrammableControlsV4,
-                    timeout: 0.4
+                    // The first wireless response can take nearly a second
+                    // even when the receiver accepts the output immediately.
+                    timeout: 2.0
                 ) else {
                     continue
                 }
 
                 reprogrammableControlsIndex = reprogIndex
                 let name = queryDeviceName() ?? ""
+                Self.logger.notice("Slot \(index) device name: \(name, privacy: .public)")
                 guard name.localizedCaseInsensitiveContains("MX Master 4") else {
                     reprogrammableControlsIndex = nil
                     continue
@@ -469,6 +482,7 @@ final class MXMasterSession: @unchecked Sendable {
         pendingRequest = pending
         pendingLock.unlock()
 
+        let requestStarted = ProcessInfo.processInfo.systemUptime
         do {
             try connection.sendOutputReport(report)
         } catch {
@@ -477,6 +491,7 @@ final class MXMasterSession: @unchecked Sendable {
                 pendingRequest = nil
             }
             pendingLock.unlock()
+            Self.logger.error("HID output failed: \(error.localizedDescription, privacy: .public)")
             emit(.error(error.localizedDescription))
             return nil
         }
@@ -493,8 +508,13 @@ final class MXMasterSession: @unchecked Sendable {
         pendingLock.unlock()
 
         guard waitResult == .success, let response else {
+            Self.logger.error("HID++ timeout: \(String(describing: pending.expectedResponse), privacy: .public)")
             return nil
         }
+        if response.isError {
+            Self.logger.error("HID++ error \(response.errorCode ?? 0): \(String(describing: pending.expectedResponse), privacy: .public)")
+        }
+        Self.logger.info("HID++ response in \(ProcessInfo.processInfo.systemUptime - requestStarted) seconds: \(String(describing: pending.expectedResponse), privacy: .public)")
         return response
     }
 

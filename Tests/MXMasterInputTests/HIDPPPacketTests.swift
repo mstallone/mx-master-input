@@ -94,6 +94,30 @@ final class HIDPPPacketTests: XCTestCase {
         XCTAssertEqual(packet?.errorCode, 0x02)
     }
 
+    func testBoltUnavailableSlotErrorIsDecoded() throws {
+        // Captured from the receiver during discovery on macOS 27.
+        let packet = try XCTUnwrap(HIDPPPacket.parse(
+            Data([0x10, 0x01, 0x8F, 0x00, 0x0A, 0x09, 0x00])
+        ))
+        XCTAssertTrue(packet.isError)
+        XCTAssertEqual(packet.deviceIndex, 1)
+        XCTAssertEqual(packet.errorCode, 0x09)
+        XCTAssertEqual(packet.parameters.first, HIDPPPacket.softwareID)
+    }
+
+    func testLongReportFeature8FIsNotALegacyError() throws {
+        let packet = try XCTUnwrap(HIDPPPacket.parse(
+            HIDPPPacket.request(
+                deviceIndex: 2,
+                featureIndex: 0x8F,
+                function: 0,
+                parameters: [0x0A, 0x09]
+            )
+        ))
+        XCTAssertFalse(packet.isError)
+        XCTAssertNil(packet.errorCode)
+    }
+
     func testDeviceConnectionNotificationReportsEstablishedLink() {
         let packet = HIDPPPacket.parse(
             Data([0x10, 0x02, 0x41, 0x04, 0x21, 0x2D, 0x40])

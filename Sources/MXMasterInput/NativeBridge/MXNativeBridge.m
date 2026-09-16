@@ -150,15 +150,11 @@ static void MXRunLoopKeepAlive(void *info) {
         manager, (__bridge CFDictionaryRef)matching
     );
 
-    IOReturn openResult = IOHIDManagerOpen(manager, kIOHIDOptionsTypeNone);
-    if (openResult != kIOReturnSuccess) {
-        CFRelease(manager);
-        return @[];
-    }
-
+    // Enumerate without opening every Logitech collection. Manager-wide open
+    // also opens keyboard/mouse interfaces, which can fail independently of
+    // HID++ access. Open only the selected vendor interface on its input thread.
     CFSetRef deviceSet = IOHIDManagerCopyDevices(manager);
     if (!deviceSet) {
-        IOHIDManagerClose(manager, kIOHIDOptionsTypeNone);
         CFRelease(manager);
         return @[];
     }
@@ -189,7 +185,6 @@ static void MXRunLoopKeepAlive(void *info) {
     }
 
     CFRelease(deviceSet);
-    IOHIDManagerClose(manager, kIOHIDOptionsTypeNone);
     CFRelease(manager);
 
     [result sortUsingComparator:^NSComparisonResult(
