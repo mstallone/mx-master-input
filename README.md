@@ -13,10 +13,12 @@ release.
 
 - Logitech MX Master 4 connected through the Logi Bolt receiver
   (`0x046D:0xC548`)
-- Apple silicon Mac running macOS 26.5.2 (`25F84`)
+- Apple silicon Mac running macOS 26 or macOS 27
 - Accessibility permission for posting system actions
 
-Version 0.1.3 is validated with Xcode 26.6 and Swift 6.3.
+Progressive gestures have been validated on macOS 26.5.2 (`25F84`) and
+macOS 27.0 (`26A428`). Release builds use Xcode 26.6 and Swift 6.3;
+macOS 27 gesture tests also run locally with Xcode 27.0 and Swift 6.4.
 
 ## Controls
 
@@ -72,7 +74,7 @@ The app uses [Sparkle 2](https://sparkle-project.org/) to check for updates
 daily and install them automatically. **Check for Updates…** in the menu-bar
 menu starts a check immediately.
 
-Version tags such as `v0.1.3` run the GitHub release workflow. It tests, signs,
+Version tags such as `v0.1.4` run the GitHub release workflow. It tests, signs,
 notarizes, and verifies a universal app before publishing the ZIP, SHA-256
 checksum, and Sparkle-signed `appcast.xml` to GitHub Releases.
 
