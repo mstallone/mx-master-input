@@ -17,7 +17,8 @@ struct HIDPPPacket: Equatable, Sendable {
     var isError: Bool {
         // Bolt answers requests to unavailable slots with the HID++ 1.0
         // error envelope, even when the request uses HID++ 2.0.
-        featureIndex == 0xFF || featureIndex == 0x8F
+        featureIndex == 0xFF
+            || (reportID == Self.shortReportID && featureIndex == 0x8F)
     }
 
     var errorCode: UInt8? {

@@ -105,6 +105,19 @@ final class HIDPPPacketTests: XCTestCase {
         XCTAssertEqual(packet.parameters.first, HIDPPPacket.softwareID)
     }
 
+    func testLongReportFeature8FIsNotALegacyError() throws {
+        let packet = try XCTUnwrap(HIDPPPacket.parse(
+            HIDPPPacket.request(
+                deviceIndex: 2,
+                featureIndex: 0x8F,
+                function: 0,
+                parameters: [0x0A, 0x09]
+            )
+        ))
+        XCTAssertFalse(packet.isError)
+        XCTAssertNil(packet.errorCode)
+    }
+
     func testDeviceConnectionNotificationReportsEstablishedLink() {
         let packet = HIDPPPacket.parse(
             Data([0x10, 0x02, 0x41, 0x04, 0x21, 0x2D, 0x40])
