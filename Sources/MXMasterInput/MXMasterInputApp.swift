@@ -59,6 +59,17 @@ struct MXMasterInputApp: App {
                     ? "computermouse.fill"
                     : "computermouse"
             )
+            .onAppear {
+                guard ProcessInfo.processInfo.arguments
+                    .contains("--open-settings")
+                else {
+                    return
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    openSettings()
+                    NSApplication.shared.activate()
+                }
+            }
         }
 
         Settings {

@@ -8,6 +8,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var isBusy = false
     @Published private(set) var status = "Disabled"
     @Published private(set) var deviceName = "No device connected"
+    @Published private(set) var batteryStatus = "Unknown"
     @Published private(set) var lastInput = "None"
     @Published private(set) var lastAction = "None"
     @Published private(set) var hapticStatus = "Unknown"
@@ -51,7 +52,7 @@ final class AppModel: ObservableObject {
         isBusy = true
         status = "Connecting…"
 
-        Task {
+        Task { [self] in
             do {
                 let connected = try await runtime.session.start(
                     activeMode: true,
@@ -77,6 +78,8 @@ final class AppModel: ObservableObject {
                 )
 
                 deviceName = connected.name
+                batteryStatus = connected.batteryPercent
+                    .map { "\($0)%" } ?? "Unknown"
                 hapticStatus = connected.hapticSupported
                     ? (connected.hapticDisabled ? "Off" : "Disable failed")
                     : "Unsupported"
@@ -108,6 +111,7 @@ final class AppModel: ObservableObject {
             isBusy = false
             status = "Disabled"
             deviceName = "No device connected"
+            batteryStatus = "Unknown"
             UserDefaults.standard.set(false, forKey: "autoEnable")
         }
     }
@@ -145,7 +149,10 @@ final class AppModel: ObservableObject {
             status = message
         case let .connected(device):
             deviceName = device.name
+            batteryStatus = device.batteryPercent
+                .map { "\($0)%" } ?? "Unknown"
         case .disconnected:
+            batteryStatus = "Unknown"
             if !isBusy {
                 status = "Disconnected"
                 isEnabled = false
@@ -158,6 +165,8 @@ final class AppModel: ObservableObject {
             lastInput = direction.rawValue
         case .tap:
             lastInput = "tap"
+        case let .battery(percent):
+            batteryStatus = percent.map { "\($0)%" } ?? "Unknown"
         case let .error(message):
             status = message
         }

@@ -5,7 +5,7 @@ import XCTest
 /// Opt-in hardware verification. The normal test suite skips this test.
 ///
 /// Run with:
-/// MXMASTER_RUN_HARDWARE_PROBE=1 xcodebuild ... \
+/// TEST_RUNNER_MXMASTER_RUN_HARDWARE_PROBE=1 xcodebuild ... \
 ///   -only-testing:MXMasterInputTests/SecureInputHardwareProbeTests
 ///
 /// The probe enables Secure Event Input only for its own process lifetime,
@@ -48,6 +48,9 @@ final class SecureInputHardwareProbeTests: XCTestCase {
             XCTAssertTrue(device.hapticSupported)
             XCTAssertFalse(device.hapticDisabled)
             XCTAssertFalse(device.panelDiverted)
+            let batteryPercent = try XCTUnwrap(device.batteryPercent)
+            XCTAssertTrue((0 ... 100).contains(batteryPercent))
+            print("MX Master 4 battery: \(batteryPercent)%")
             await session.stop()
         } catch {
             await session.stop()
