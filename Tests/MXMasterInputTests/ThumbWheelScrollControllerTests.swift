@@ -19,6 +19,41 @@ final class ThumbWheelScrollControllerTests: XCTestCase {
         }
     }
 
+    func testPointerMovementIsResampledThroughoutBufferedScrollAndRelease() throws {
+        var pointer = CGPoint(x: 100, y: 100)
+        var locations: [CGPoint] = []
+        let controller = ThumbWheelScrollController(pointerLocation: { pointer }, post: {
+            locations.append($0.location)
+        })
+        controller.consume(try report(delta: 4, state: 1))
+        controller.consume(try report(delta: 0, state: 3))
+        for index in 1 ... 3 {
+            pointer = CGPoint(x: 100 + index * 50, y: 100 + index * 20)
+            controller.advanceFrame()
+        }
+        XCTAssertEqual(locations, [CGPoint(x: 100, y: 100), CGPoint(x: 150, y: 120),
+                                   CGPoint(x: 200, y: 140), CGPoint(x: 250, y: 160),
+                                   CGPoint(x: 250, y: 160)])
+        XCTAssertFalse(controller.isActive)
+
+        controller.consume(try report(delta: 4, state: 1))
+        pointer = CGPoint(x: 600, y: 500)
+        controller.finish(cancelled: true)
+        XCTAssertEqual(locations.last, pointer)
+    }
+
+    func testScrollSourcePermitsPhysicalInputDuringPostingAndDragging() throws {
+        let source = try XCTUnwrap(ThumbWheelScrollController.makeEventSource())
+        XCTAssertEqual(source.localEventsSuppressionInterval, 0)
+        for state in [CGEventSuppressionState.eventSuppressionStateSuppressionInterval,
+                      .eventSuppressionStateRemoteMouseDrag] {
+            let mask = source.getLocalEventsFilterDuringSuppressionState(state)
+            XCTAssertTrue(mask.contains(.permitLocalMouseEvents))
+            XCTAssertTrue(mask.contains(.permitLocalKeyboardEvents))
+            XCTAssertTrue(mask.contains(.permitSystemDefinedEvents))
+        }
+    }
+
     func testLegacyLineDeltasRetainCoreGraphicsPixelConversion() throws {
         for pixels: Int32 in [-120, -12, 0, 12, 120] {
             let baseline = try XCTUnwrap(CGEvent(
