@@ -35,6 +35,39 @@ final class ThumbWheelScrollControllerTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testRightwardWheelMotionMovesViewportAccordingToNaturalScrolling() throws {
+        _ = NSApplication.shared
+        for natural in [false, true] {
+            for deviceDirection in [-1.0, 1.0] {
+                let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 300, height: 300))
+                let window = NSWindow(contentRect: scrollView.frame, styleMask: .borderless,
+                                      backing: .buffered, defer: false)
+                window.contentView = scrollView
+                scrollView.hasHorizontalScroller = true
+                scrollView.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 1500, height: 300))
+                scrollView.contentView.scroll(to: NSPoint(x: 500, y: 0))
+                let controller = ThumbWheelScrollController(smoothingFrames: 1,
+                                                           naturalScrolling: { natural }) {
+                    scrollView.scrollWheel(with: NSEvent(cgEvent: $0)!)
+                }
+                controller.deviceDirection = deviceDirection
+                // Both firmware conventions represent the same physical rightward roll.
+                controller.consume(try report(delta: Int16(2 * deviceDirection), state: 1))
+                controller.consume(try report(delta: Int16(2 * deviceDirection), state: 2))
+                controller.advanceFrame()
+                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+                if natural {
+                    XCTAssertLessThan(scrollView.contentView.bounds.origin.x, 500)
+                } else {
+                    XCTAssertGreaterThan(scrollView.contentView.bounds.origin.x, 500)
+                }
+                controller.finish()
+                withExtendedLifetime(window) {}
+            }
+        }
+    }
+
     func testRotationReversesWithinOneGestureAndReleaseEndsIt() throws {
         var events: [NSEvent] = []
         let controller = ThumbWheelScrollController(smoothingFrames: 1, naturalScrolling: { false }) {
@@ -45,7 +78,7 @@ final class ThumbWheelScrollControllerTests: XCTestCase {
         controller.advanceFrame()
         controller.consume(try report(delta: 0, state: 3))
         XCTAssertEqual(events.map(\.phase), [.began, .changed, .ended])
-        XCTAssertEqual(events.map(\.scrollingDeltaX), [20, -10, 0])
+        XCTAssertEqual(events.map(\.scrollingDeltaX), [-20, 10, 0])
         XCTAssertFalse(controller.isActive)
     }
 
@@ -57,9 +90,9 @@ final class ThumbWheelScrollControllerTests: XCTestCase {
         controller.consume(try report(delta: 1, state: 1))
         controller.consume(try report(delta: 0, state: 3))
         XCTAssertTrue(controller.isActive)
-        XCTAssertLessThan(events[0].scrollingDeltaX, 10)
+        XCTAssertLessThan(abs(events[0].scrollingDeltaX), 10)
         for _ in 0 ..< 4 { controller.advanceFrame() }
-        XCTAssertEqual(events.map(\.scrollingDeltaX).reduce(0, +), 10)
+        XCTAssertEqual(events.map(\.scrollingDeltaX).reduce(0, +), -10)
         XCTAssertEqual(events.first?.phase, .began)
         XCTAssertEqual(events.last?.phase, .ended)
         XCTAssertFalse(controller.isActive)
@@ -75,8 +108,8 @@ final class ThumbWheelScrollControllerTests: XCTestCase {
         let reversalIndex = events.count
         controller.consume(try report(delta: 0, state: 3))
         for _ in 0 ..< 4 { controller.advanceFrame() }
-        XCTAssertEqual(events.map(\.scrollingDeltaX).reduce(0, +), 20)
-        XCTAssertTrue(events.dropFirst(reversalIndex).allSatisfy { $0.scrollingDeltaX <= 0 })
+        XCTAssertEqual(events.map(\.scrollingDeltaX).reduce(0, +), -20)
+        XCTAssertTrue(events.dropFirst(reversalIndex).allSatisfy { $0.scrollingDeltaX >= 0 })
         XCTAssertEqual(events.filter { $0.phase == .began }.count, 1)
         XCTAssertEqual(events.last?.phase, .ended)
     }
@@ -126,7 +159,7 @@ final class ThumbWheelScrollControllerTests: XCTestCase {
         controller.consume(try report(delta: 1, state: 2))
         controller.finish()
         controller.consume(try report(delta: 1, state: 1))
-        XCTAssertEqual(deltas, [10, 10, 0, -10])
+        XCTAssertEqual(deltas, [-10, -10, 0, 10])
         controller.finish(cancelled: true)
     }
 

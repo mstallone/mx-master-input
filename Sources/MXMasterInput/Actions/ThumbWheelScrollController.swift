@@ -73,7 +73,8 @@ final class ThumbWheelScrollController: @unchecked Sendable {
                 location = CGEvent(source: nil)?.location ?? .zero
                 // Normalize firmware direction, then freeze the user's scroll
                 // preference until this gesture ends.
-                direction = deviceDirection * (naturalScrolling() ? -1 : 1)
+                // Positive CG horizontal deltas move the viewport left.
+                direction = -deviceDirection * (naturalScrolling() ? -1 : 1)
             }
             let delta = Double(report.delta) * pixelsPerUnit * direction
             // Do not let buffered movement delay a physical reversal.
