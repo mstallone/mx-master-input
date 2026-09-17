@@ -40,15 +40,19 @@ final class ThumbWheelScrollController: @unchecked Sendable {
     private var beganPosted = false
     private let post: (CGEvent) -> Void
     private let naturalScrolling: () -> Bool
-    private var location: CGPoint?
+    private let pointerLocation: () -> CGPoint
+    private let eventSource = makeEventSource()
+    private(set) var isActive = false
     private var direction = 1.0
     var pixelsPerUnit = 10.0
     var deviceDirection = 1.0
-    var isActive: Bool { location != nil }
 
     init(
         queue: DispatchQueue? = nil,
         smoothingFrames: Int = 4,
+        pointerLocation: @escaping () -> CGPoint = {
+            CGEvent(source: nil)?.location ?? .zero
+        },
         naturalScrolling: @escaping () -> Bool = {
             (UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection")
                 as? Bool) ?? true
@@ -60,6 +64,7 @@ final class ThumbWheelScrollController: @unchecked Sendable {
         self.smoothingFrames = smoothingFrames
         self.naturalScrolling = naturalScrolling
         self.post = post
+        self.pointerLocation = pointerLocation
     }
 
     func consume(_ report: ThumbWheelReport) {
@@ -70,7 +75,7 @@ final class ThumbWheelScrollController: @unchecked Sendable {
         if report.delta != 0 {
             ending = false
             if !isActive {
-                location = CGEvent(source: nil)?.location ?? .zero
+                isActive = true
                 // Normalize firmware direction, then freeze the user's scroll
                 // preference until this gesture ends.
                 // Positive CG horizontal deltas move the viewport left.
@@ -109,7 +114,7 @@ final class ThumbWheelScrollController: @unchecked Sendable {
         timer?.cancel()
         timer = nil
         pendingFrames.removeAll()
-        location = nil
+        isActive = false
         beganPosted = false
         ending = false
         pixelRemainder = 0
@@ -146,15 +151,28 @@ final class ThumbWheelScrollController: @unchecked Sendable {
     }
 
     private func send(delta: Double, phase: Phase) {
-        guard let event = Self.makeEvent(delta: delta, phase: phase) else { return }
-        if let location { event.location = location }
+        guard let event = Self.makeEvent(delta: delta, phase: phase, source: eventSource) else { return }
+        // A wheel gesture must not replay the pointer position from its start.
+        // Sample even for buffered frames and the final end/cancel event.
+        event.location = pointerLocation()
         event.flags = CGEvent(source: nil)?.flags ?? []
         post(event)
     }
 
-    static func makeEvent(delta: Double, phase: Phase) -> CGEvent? {
-        guard let event = CGEvent(
-            scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+    static func makeEventSource() -> CGEventSource? {
+        guard let source = CGEventSource(stateID: .privateState) else { return nil }
+        source.localEventsSuppressionInterval = 0
+        let allowed: CGEventFilterMask = [
+            .permitLocalMouseEvents, .permitLocalKeyboardEvents, .permitSystemDefinedEvents,
+        ]
+        source.setLocalEventsFilterDuringSuppressionState(allowed, state: .eventSuppressionStateSuppressionInterval)
+        source.setLocalEventsFilterDuringSuppressionState(allowed, state: .eventSuppressionStateRemoteMouseDrag)
+        return source
+    }
+
+    static func makeEvent(delta: Double, phase: Phase, source: CGEventSource? = nil) -> CGEvent? {
+        guard let source = source ?? makeEventSource(), let event = CGEvent(
+            scrollWheelEvent2Source: source, units: .pixel, wheelCount: 2,
             wheel1: 0, wheel2: Int32(delta.rounded()), wheel3: 0
         ) else { return nil }
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
