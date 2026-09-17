@@ -60,6 +60,7 @@ enum MXMasterSessionError: LocalizedError {
     case missingHapticFeature
     case hapticDisableFailed
     case panelDiversionFailed
+    case thumbWheelConfigurationFailed
     case receiverNotificationsFailed
     case stopped
 
@@ -79,6 +80,8 @@ enum MXMasterSessionError: LocalizedError {
             "The MX Master 4 did not confirm that its haptic engine was turned off."
         case .panelDiversionFailed:
             "The MX Master 4 rejected Sense Panel RawXY diversion."
+        case .thumbWheelConfigurationFailed:
+            "The MX Master 4 could not enable trackpad-style thumb wheel scrolling."
         case .receiverNotificationsFailed:
             "The Logi Bolt receiver could not enable mouse wake notifications."
         case .stopped:

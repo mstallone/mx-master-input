@@ -31,6 +31,7 @@ final class MXMasterSession: @unchecked Sendable {
         static let deviceName: UInt16 = 0x0005
         static let reprogrammableControlsV4: UInt16 = 0x1B04
         static let haptic: UInt16 = 0x19B0
+        static let thumbWheel: UInt16 = 0x2150
     }
 
     private enum Receiver {
@@ -54,6 +55,11 @@ final class MXMasterSession: @unchecked Sendable {
     private var eventHandler: (@Sendable (MXMasterEvent) -> Void)?
     private var gestureHandler: (@Sendable (PanelGestureEvent) -> Void)?
     private var tapHandler: (@Sendable () -> Void)?
+
+    private lazy var thumbScroll = ThumbWheelScrollController(queue: workQueue)
+    private var thumbWheelIndex: UInt8?
+    private var originalThumbReporting: [UInt8]?
+    private var thumbIdleGeneration = 0
 
     private var deviceIndex: UInt8 = 0
     private var reprogrammableControlsIndex: UInt8?
@@ -230,6 +236,10 @@ final class MXMasterSession: @unchecked Sendable {
                     throw MXMasterSessionError.receiverNotificationsFailed
                 }
 
+                if activeMode, !configureThumbWheel() {
+                    throw MXMasterSessionError.thumbWheelConfigurationFailed
+                }
+
                 let connected = ConnectedMXMaster(
                     name: name,
                     transport: candidate.transport,
@@ -260,6 +270,14 @@ final class MXMasterSession: @unchecked Sendable {
     private func stopOnQueue() {
         configurationRecoveryGeneration += 1
         configurationRecoveryScheduled = false
+
+        cancelThumbScroll()
+        if let thumbWheelIndex, let originalThumbReporting {
+            _ = request(featureIndex: thumbWheelIndex, function: 2,
+                        parameters: originalThumbReporting, timeout: 0.5)
+        }
+        thumbWheelIndex = nil
+        originalThumbReporting = nil
 
         if panelDiverted {
             _ = setPanelReporting(
@@ -670,6 +688,7 @@ final class MXMasterSession: @unchecked Sendable {
             if packet.reportsEstablishedLink {
                 scheduleConfigurationRecovery()
             } else {
+                cancelThumbScroll()
                 emit(.battery(percent: nil))
             }
             return
@@ -684,6 +703,22 @@ final class MXMasterSession: @unchecked Sendable {
                feature: batteryFeature
            ) {
             emit(event)
+            return
+        }
+
+        if activeMode, let thumbWheelIndex,
+           let report = ThumbWheelReport(packet: packet, deviceIndex: deviceIndex,
+                                         featureIndex: thumbWheelIndex) {
+            thumbScroll.consume(report)
+            thumbIdleGeneration += 1
+            let generation = thumbIdleGeneration
+            // Close a gesture if a release report is lost, including link loss.
+            if thumbScroll.isActive {
+                workQueue.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                    guard let self, self.thumbIdleGeneration == generation else { return }
+                    self.thumbScroll.finish()
+                }
+            }
             return
         }
 
@@ -810,6 +845,7 @@ final class MXMasterSession: @unchecked Sendable {
         configurationRecoveryGeneration += 1
         let generation = configurationRecoveryGeneration
 
+        cancelThumbScroll()
         panelHeld = false
         if recognizer.cancel() {
             gestureHandler?(.cancelled)
@@ -860,7 +896,8 @@ final class MXMasterSession: @unchecked Sendable {
                 timeout: 1.0
             )
 
-        if hapticDisabled, diversionRestored {
+        let thumbRestored = configureThumbWheel()
+        if hapticDisabled, diversionRestored, thumbRestored {
             panelDiverted = true
             configurationRecoveryScheduled = false
             emit(.status("Enabled"))
@@ -885,6 +922,39 @@ final class MXMasterSession: @unchecked Sendable {
                 attempt: attempt + 1
             )
         }
+    }
+
+    private func cancelThumbScroll() {
+        thumbIdleGeneration += 1
+        thumbScroll.finish(cancelled: true)
+    }
+
+    private func configureThumbWheel() -> Bool {
+        guard let index = findFeature(Feature.thumbWheel, timeout: 0.8),
+              let info = request(featureIndex: index, function: 0,
+                                 parameters: [], timeout: 0.8),
+              info.parameters.count >= 8,
+              let status = request(featureIndex: index, function: 1,
+                                   parameters: [], timeout: 0.8),
+              status.parameters.count >= 2 else { return false }
+        let resolution = Int(info.parameters[2]) << 8 | Int(info.parameters[3])
+        guard resolution > 0 else { return false }
+        thumbWheelIndex = index
+        // Status byte 1 also contains read-only touch/proximity bits. Only
+        // restore its writable inversion bit; retain the original across wake.
+        if originalThumbReporting == nil {
+            originalThumbReporting = [status.parameters[0] & 1, status.parameters[1] & 1]
+        }
+        thumbScroll.pixelsPerUnit = 1200.0 / Double(resolution)
+        thumbScroll.deviceDirection = info.parameters[4] == 0 ? -1 : 1
+        // Request uninverted raw input. Apply macOS natural scrolling once,
+        // when creating the output gesture.
+        guard request(featureIndex: index, function: 2,
+                      parameters: [1, 0], timeout: 0.8) != nil,
+              let verified = request(featureIndex: index, function: 1,
+                                     parameters: [], timeout: 0.8),
+              verified.parameters.count >= 2 else { return false }
+        return verified.parameters[0] & 1 == 1 && verified.parameters[1] & 1 == 0
     }
 
     private func decodeSigned16(high: UInt8, low: UInt8) -> Int {

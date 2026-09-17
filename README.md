@@ -37,6 +37,17 @@ panel, and each swipe locks to its initial horizontal or vertical axis.
 Mission Control taps and the compatibility fallback use the Control-arrow
 shortcuts configured in macOS Keyboard settings.
 
+The horizontal thumb wheel sends precise, continuous scroll gestures with a
+short smoothing buffer and follows the macOS natural-scrolling preference.
+Apps control how those gestures behave: scrollable content can move sideways,
+and browsers can interpret them as page swipes when enabled. No browser
+back/forward shortcuts are assigned. The main vertical wheel is unchanged.
+Disabling or quitting restores the thumb wheel's original reporting mode.
+
+This implementation does not yet synthesize inertial scrolling after release.
+Mouse feel and browser compatibility still need physical validation; see
+[thumb wheel research and validation](Docs/ThumbWheelScrolling.md).
+
 Settings and the menu dropdown show the mouse's battery percentage while the app is
 enabled. The reading updates when the mouse reports a change and after it
 wakes. If the mouse cannot report a percentage, the battery reads **Unknown**.

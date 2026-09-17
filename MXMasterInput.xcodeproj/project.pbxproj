@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0395D1EFDEAAB5D6EF7AA3BF /* ThumbWheelScrollControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E8387DE8C6A90B7657035D4 /* ThumbWheelScrollControllerTests.swift */; };
 		05D339E13E5096A7E170099F /* MXMasterSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7371C962B1B1ED1934E9064E /* MXMasterSession.swift */; };
 		0689F38D02A3742D7236673A /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 032E143D4B316AF0895DE7B5 /* ServiceManagement.framework */; };
 		15E95014820B44706BDB2E45 /* SystemActionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */; };
@@ -23,7 +24,9 @@
 		4C51C66573BCE73482822165 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89B09753B9F619A3F0B4D9DB /* Carbon.framework */; };
 		4E5187552BF55A076F0AADA4 /* SystemActionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */; };
 		56736A760CC770D42C06C128 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89B09753B9F619A3F0B4D9DB /* Carbon.framework */; };
+		5C286DB443B9D4512C01292F /* ThumbWheelScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABF47E11FBE1CA352EFCC25 /* ThumbWheelScrollController.swift */; };
 		5D8337ABE4EE523EBD51529E /* MXMasterSessionBatteryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02ABB55A13A5F2C5EA19E932 /* MXMasterSessionBatteryTests.swift */; };
+		67506A65FF388B67529F4701 /* ThumbWheelScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABF47E11FBE1CA352EFCC25 /* ThumbWheelScrollController.swift */; };
 		67A737BEA410154843F739A1 /* MXMasterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7AE164A088EDEA5D1B102B4 /* MXMasterModels.swift */; };
 		67BF7B23D8F5BD5BF5007EE8 /* SystemActionControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */; };
 		6BF95B299D531CEFF852380E /* SecureInputHardwareProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */; };
@@ -57,6 +60,7 @@
 		6DDBFAF631A40FEA77754B4D /* MXMasterInput.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MXMasterInput.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7371C962B1B1ED1934E9064E /* MXMasterSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterSession.swift; sourceTree = "<group>"; };
 		7C2D1CE837377227F90EBDCE /* MXMasterInputApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MXMasterInputApp.swift; sourceTree = "<group>"; };
+		7E8387DE8C6A90B7657035D4 /* ThumbWheelScrollControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbWheelScrollControllerTests.swift; sourceTree = "<group>"; };
 		89745B8445A57933C2DE334A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		89B09753B9F619A3F0B4D9DB /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
 		90C6CB1B338CC88EA3C5CBE4 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -73,6 +77,7 @@
 		ECE80ECD3D7A371D1A80C88E /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		EF80F29592406C7F7664DC26 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		F26CB86A19BA36FBFD07F830 /* MXDockSwipeEvent.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MXDockSwipeEvent.h; sourceTree = "<group>"; };
+		FABF47E11FBE1CA352EFCC25 /* ThumbWheelScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbWheelScrollController.swift; sourceTree = "<group>"; };
 		FDD748A4751D2210BA24C541 /* MXNativeBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MXNativeBridge.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -179,6 +184,7 @@
 			isa = PBXGroup;
 			children = (
 				53D0E2431EE6F0DB7704E464 /* SystemActionController.swift */,
+				FABF47E11FBE1CA352EFCC25 /* ThumbWheelScrollController.swift */,
 			);
 			path = Actions;
 			sourceTree = "<group>";
@@ -202,6 +208,7 @@
 				02ABB55A13A5F2C5EA19E932 /* MXMasterSessionBatteryTests.swift */,
 				94D1FC66F84A624654B08637 /* SecureInputHardwareProbeTests.swift */,
 				EA992925AF58AB8A24395CE8 /* SystemActionControllerTests.swift */,
+				7E8387DE8C6A90B7657035D4 /* ThumbWheelScrollControllerTests.swift */,
 			);
 			path = MXMasterInputTests;
 			sourceTree = "<group>";
@@ -324,6 +331,7 @@
 				05D339E13E5096A7E170099F /* MXMasterSession.swift in Sources */,
 				4BC8F0A608A8BE32471E1AA9 /* MXNativeBridge.m in Sources */,
 				15E95014820B44706BDB2E45 /* SystemActionController.swift in Sources */,
+				67506A65FF388B67529F4701 /* ThumbWheelScrollController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,6 +352,8 @@
 				6BF95B299D531CEFF852380E /* SecureInputHardwareProbeTests.swift in Sources */,
 				4E5187552BF55A076F0AADA4 /* SystemActionController.swift in Sources */,
 				67BF7B23D8F5BD5BF5007EE8 /* SystemActionControllerTests.swift in Sources */,
+				5C286DB443B9D4512C01292F /* ThumbWheelScrollController.swift in Sources */,
+				0395D1EFDEAAB5D6EF7AA3BF /* ThumbWheelScrollControllerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

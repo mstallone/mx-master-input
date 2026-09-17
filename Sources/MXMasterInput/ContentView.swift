@@ -60,6 +60,13 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             }
 
+            Section("Thumb wheel") {
+                mapping("Roll left or right", "Smooth horizontal scrolling")
+                Text("Uses trackpad-style scrolling. Apps decide whether a scroll moves content or swipes between pages.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section {
                 DisclosureGroup(
                     isExpanded: $diagnosticsExpanded
@@ -92,7 +99,7 @@ struct ContentView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 620)
+        .frame(width: 520, height: 720)
         .padding()
         .task {
             // Poll diagnostics only while Settings is shown. SwiftUI cancels
