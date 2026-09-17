@@ -158,7 +158,8 @@ final class ThumbWheelScrollController: @unchecked Sendable {
         ) else { return nil }
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
         event.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: delta)
-        event.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: delta)
+        // Keep the initializer's fixed-point line delta. It is deliberately
+        // different from the pixel delta used by precise-scroll consumers.
         event.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase.rawValue)
         event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: 0)
         return event

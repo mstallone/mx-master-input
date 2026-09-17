@@ -19,6 +19,22 @@ final class ThumbWheelScrollControllerTests: XCTestCase {
         }
     }
 
+    func testLegacyLineDeltasRetainCoreGraphicsPixelConversion() throws {
+        for pixels: Int32 in [-120, -12, 0, 12, 120] {
+            let baseline = try XCTUnwrap(CGEvent(
+                scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+                wheel1: 0, wheel2: pixels, wheel3: 0
+            ))
+            let generated = try XCTUnwrap(ThumbWheelScrollController.makeEvent(
+                delta: Double(pixels), phase: .changed
+            ))
+            let expected = try XCTUnwrap(NSEvent(cgEvent: baseline))
+            let actual = try XCTUnwrap(NSEvent(cgEvent: generated))
+            XCTAssertEqual(actual.scrollingDeltaX, CGFloat(pixels), accuracy: 0.001)
+            XCTAssertEqual(actual.deltaX, expected.deltaX, accuracy: 0.0001)
+        }
+    }
+
     func testRotationReversesWithinOneGestureAndReleaseEndsIt() throws {
         var events: [NSEvent] = []
         let controller = ThumbWheelScrollController(smoothingFrames: 1, naturalScrolling: { false }) {
