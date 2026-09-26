@@ -6,11 +6,16 @@ let package = Package(
     platforms: [.macOS(.v26)],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.4"),
+        .package(path: "../menuhub"),
     ],
     targets: [
         .executableTarget(
             name: "MXSwipe",
-            dependencies: ["SystemEvents", .product(name: "Sparkle", package: "Sparkle")],
+            dependencies: [
+                "SystemEvents",
+                .product(name: "Sparkle", package: "Sparkle"),
+                .product(name: "MenuHub", package: "menuhub"),
+            ],
             path: "Sources/MXSwipe",
             swiftSettings: [.swiftLanguageMode(.v6)],
             linkerSettings: [

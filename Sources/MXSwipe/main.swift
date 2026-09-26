@@ -1,4 +1,5 @@
 import AppKit
+import MenuHub
 import OSLog
 import ServiceManagement
 import Sparkle
@@ -6,7 +7,7 @@ import Sparkle
 let appName = "MXSwipe"
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     enum Status {
         case off
         case needsAccessibility
@@ -17,12 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private static let logger = Logger(subsystem: "com.mattstallone.mxmasterinput", category: "App")
-    private static let activeIcon = icon(opacity: 1, description: appName)
-    private static let inactiveIcon = icon(opacity: 0.4, description: "\(appName), inactive")
     private let session = MXMasterSession()
     private let updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
-    private let menu = NSMenu()
-    private var statusItem: NSStatusItem?
+    private var menu: MenuHub?
     private var connection: Task<Void, Never>?
     private var retry: Task<Void, Never>?
     private var retryDelay: Duration = .seconds(2)
@@ -32,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var mouseName: String?
 
     private var status = Status.off {
-        didSet { statusItem?.button?.image = status.isActive ? Self.activeIcon : Self.inactiveIcon }
+        didSet { menu?.update() }
     }
 
     /// Stored under the key 0.1.x used, so an upgrade keeps the user's choice.
@@ -43,11 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UserDefaults.standard.register(defaults: ["autoEnable": true])
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = Self.inactiveIcon
-        menu.delegate = self
-        item.menu = menu
-        statusItem = item
+        menu = MenuHub(icon: NSImage(systemSymbolName: "computermouse", accessibilityDescription: appName)!) { self.section }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemDidWake),
                                                           name: NSWorkspace.didWakeNotification, object: nil)
         if isEnabled { connect() }
@@ -57,72 +51,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         session.stopSynchronously()
     }
 
-    // MARK: Menu, rebuilt on open so every state it shows is current
+    // MARK: Menu
 
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-        let header = NSMenuItem()
-        header.view = headerView
-        menu.addItem(header)
+    /// The mouse, and its battery or what's keeping gestures from working. Read each time the menu opens.
+    private var section: MenuSection {
+        var items: [MenuItem] = []
         switch status {
         case .needsAccessibility:
-            menu.addItem(withTitle: "Open Accessibility Settings…", action: #selector(openAccessibilitySettings), keyEquivalent: "")
-            let reset = menu.addItem(withTitle: "Reset Accessibility Permission", action: #selector(resetAccessibility), keyEquivalent: "")
-            reset.isAlternate = true
-            reset.keyEquivalentModifierMask = .option
+            items += [.action("Open Accessibility Settings…") { self.openAccessibilitySettings() },
+                      .alternate("Reset Accessibility Permission") { self.resetAccessibility() }]
         case .failed(_, retrying: false):
-            menu.addItem(withTitle: "Try Again", action: #selector(tryAgain), keyEquivalent: "")
+            items.append(.action("Try Again") { self.connect() })
         default:
             break
         }
-        let toggle = isEnabled ? "Turn Gestures Off" : "Turn Gestures On"
-        menu.addItem(withTitle: toggle, action: #selector(toggleEnabled), keyEquivalent: "")
-        menu.addItem(.separator())
-
-        let login = menu.addItem(withTitle: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
-        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        let update = menu.addItem(withTitle: "Check for Updates…",
-                                  action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
-        update.target = updater
-        menu.addItem(.separator())
-
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        menu.addItem(withTitle: "\(appName) \(version)", action: nil, keyEquivalent: "")
-        menu.addItem(withTitle: "Quit \(appName)", action: #selector(NSApplication.terminate), keyEquivalent: "q")
+        items += [
+            .action(isEnabled ? "Turn Gestures Off" : "Turn Gestures On") { self.toggleEnabled() },
+            .separator,
+            .action("Open at Login", isOn: SMAppService.mainApp.status == .enabled) { self.toggleLogin() },
+            .action("Check for Updates…") { self.updater.checkForUpdates(nil) },
+        ]
+        return MenuSection(header: header, items: items, isActive: status.isActive)
     }
 
-    /// The mouse, and its battery or what's keeping gestures from working.
-    private var headerView: MenuHeaderView {
+    private var header: MenuHeader {
         switch status {
         case let .connected(name, battery, asleep):
-            MenuHeaderView(title: name, detail: asleep ? .status("Asleep") : battery.map { .battery($0) })
-        case .off: MenuHeaderView(title: "MX Master 4", detail: .status("Gestures Off"))
-        case .connecting: MenuHeaderView(title: "MX Master 4", detail: .status("Connecting…"))
-        case .needsAccessibility: MenuHeaderView(title: "MX Master 4", detail: .message("\(appName) needs Accessibility permission."))
-        case let .failed(message, _): MenuHeaderView(title: "MX Master 4", detail: .message(message))
+            MenuHeader(title: name, detail: asleep ? .status("Asleep") : battery.map { .battery($0) })
+        case .off: MenuHeader(title: "MX Master 4", detail: .status("Gestures Off"))
+        case .connecting: MenuHeader(title: "MX Master 4", detail: .status("Connecting…"))
+        case .needsAccessibility: MenuHeader(title: "MX Master 4", detail: .message("\(appName) needs Accessibility permission."))
+        case let .failed(message, _): MenuHeader(title: "MX Master 4", detail: .message(message))
         }
     }
 
-    @objc private func toggleEnabled() {
+    private func toggleEnabled() {
         isEnabled.toggle()
-        Self.logger.notice("Gestures turned \(self.isEnabled ? "on" : "off")")
+        Self.logger.notice("Gestures turned \(self.isEnabled ? "on" : "off", privacy: .public)")
         if isEnabled { connect() } else { disconnect() }
     }
 
-    @objc private func tryAgain() { connect() }
-
-    @objc private func toggleLogin() {
+    private func toggleLogin() {
         do { try SMAppService.mainApp.status == .enabled ? SMAppService.mainApp.unregister() : SMAppService.mainApp.register() }
         catch { NSApp.presentError(error) }
     }
 
-    @objc private func openAccessibilitySettings() {
+    private func openAccessibilitySettings() {
         NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 
     /// Clears a stale entry, which is what macOS keeps when the app's signature changes: the switch
     /// shows as on, but the app is not trusted.
-    @objc private func resetAccessibility() {
+    private func resetAccessibility() {
         let tccutil = Process()
         tccutil.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
         tccutil.arguments = ["reset", "Accessibility", Bundle.main.bundleIdentifier ?? ""]
@@ -220,22 +200,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             timer.invalidate()
             MainActor.assumeIsolated { self?.connect() }
         }
-    }
-}
-
-extension AppDelegate {
-    /// The menu-bar glyph, at full strength while gestures work and faded otherwise. Faded by drawing at
-    /// partial opacity rather than with `appearsDisabled`, so the level is the same on every menu bar;
-    /// it stays a template, so the menu bar still tints it.
-    private static func icon(opacity: CGFloat, description: String) -> NSImage {
-        let symbol = NSImage(systemSymbolName: "computermouse", accessibilityDescription: nil)!
-        let image = NSImage(size: symbol.size, flipped: false) { rect in
-            symbol.draw(in: rect, from: .zero, operation: .sourceOver, fraction: opacity)
-            return true
-        }
-        image.isTemplate = true
-        image.accessibilityDescription = description
-        return image
     }
 }
 
