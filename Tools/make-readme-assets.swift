@@ -1,6 +1,8 @@
 // Renders the README's menu images, light and dark, from synthetic content: a plain backdrop and menu
-// bar drawn here, and the app's real menu header, so nothing from the machine that runs it appears.
-//   swiftc -O -parse-as-library Tools/make-readme-assets.swift Sources/MXSwipe/MenuHeader.swift -o .build/make-readme-assets
+// bar drawn here, and the menu laid out by MenuHub's own code, so nothing from the machine that runs it
+// appears. Needs MenuHub checked out (swift package resolve):
+//   swiftc -O -parse-as-library Tools/make-readme-assets.swift .build/checkouts/menuhub/Sources/MenuHub/*.swift \
+//     -o .build/make-readme-assets
 //   .build/make-readme-assets assets
 import AppKit
 
@@ -14,27 +16,15 @@ let createImage = unsafeBitCast(dlsym(UnsafeMutableRawPointer(bitPattern: -2), "
 let size = NSSize(width: 440, height: 214)
 let barHeight: CGFloat = 24
 
-final class Target: NSObject { @objc func noop() {} }
-let target = Target()
-
-/// The menu as the app shows it with the mouse connected.
+/// The menu as MXSwipe shows it on its own, with the mouse connected.
 @MainActor func makeMenu() -> NSMenu {
+    let mxswipe = Member(pid: 1, name: "MXSwipe", launched: Date(), revision: 0, isActive: true,
+                         header: MenuHeader(title: "MX Master 4", detail: .battery(83)), items: [
+                             .action("Turn Gestures Off") {}, .separator,
+                             .action("Open at Login", isOn: true) {}, .action("Check for Updates…") {},
+                         ])
     let menu = NSMenu()
-    func add(_ title: String, key: String = "") -> NSMenuItem {
-        let item = menu.addItem(withTitle: title, action: #selector(Target.noop), keyEquivalent: key)
-        item.target = target
-        return item
-    }
-    let header = NSMenuItem()
-    header.view = MenuHeaderView(title: "MX Master 4", detail: .battery(83))
-    menu.addItem(header)
-    _ = add("Turn Gestures Off")
-    menu.addItem(.separator())
-    add("Open at Login").state = .on
-    _ = add("Check for Updates…")
-    menu.addItem(.separator())
-    menu.addItem(withTitle: "MXSwipe 0.2.1", action: nil, keyEquivalent: "")
-    _ = add("Quit MXSwipe", key: "q")
+    MenuHub.populate(menu, with: [mxswipe], version: "0.3.0", target: nil)
     return menu
 }
 

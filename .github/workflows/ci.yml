@@ -24,6 +24,9 @@ jobs:
       - name: Test
         run: swift test
 
+      - name: Type-check the README tool
+        run: swiftc -parse-as-library -typecheck Tools/make-readme-assets.swift .build/checkouts/menuhub/Sources/MenuHub/*.swift
+
       - name: Build universal binary
         run: swift build -c release --arch arm64 --arch x86_64
 

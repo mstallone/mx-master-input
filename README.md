@@ -19,10 +19,11 @@ and the desktop jumps.
 - A tap on the panel opens Mission Control.
 - The horizontal thumb wheel sends continuous, pixel-precise scroll events with the phases a
   two-finger trackpad scroll has, following your natural scrolling setting. Each app decides what
-  they do, so documents scroll sideways and Safari can swipe between pages. The main wheel is
+  the events do, so documents scroll sideways and Safari can swipe between pages. The main wheel is
   unchanged, and there is no momentum after you let go.
 - The menu-bar icon is bright while gestures work and faded while they're off or the mouse isn't
-  connected. The menu shows the mouse and its battery.
+  connected. The menu shows the mouse and its battery. With [RetinaShot](https://github.com/mstallone/retinashot)
+  also running, the two share one icon and menu through [MenuHub](https://github.com/mstallone/menuhub).
 
 | Sense Panel | Action |
 |---|---|
@@ -83,8 +84,7 @@ MX Master 4 without changing it, and is skipped unless asked for:
 
     MXMASTER_RUN_HARDWARE_PROBE=1 swift test --filter SecureInputHardwareProbeTests
 
-    Sources/MXSwipe/main.swift              app lifecycle, menu, permission, reconnecting
-    Sources/MXSwipe/MenuHeader.swift        the menu's first row: the mouse and its battery or status
+    Sources/MXSwipe/main.swift              app lifecycle, menu section, permission, reconnecting
     Sources/MXSwipe/Session.swift           HID++ session: discovery, configuration, wake recovery
     Sources/MXSwipe/HIDPP.swift             HID++ reports, feature IDs, battery readings
     Sources/MXSwipe/HIDDevice.swift         IOKit access to the receiver's HID++ interface
@@ -94,7 +94,7 @@ MX Master 4 without changing it, and is skipped unless asked for:
     Sources/SystemEvents/                   the macOS 27 HIDEvent and the Accessibility key press
     Resources/Info.plist                    bundle template; the version is stamped at build time
     Tools/make-icon.swift                   renders AppIcon.icns
-    Tools/make-readme-assets.swift          renders the menu images in this README
+    Tools/make-readme-assets.swift          renders the menu images in this README, laid out by MenuHub
     Scripts/build-app.sh                    stages MXSwipe.app from a built binary
     Scripts/sign.sh                         signs the app and Sparkle inside out
     Scripts/build-release.sh                CI: universal build, Developer ID, notarize, staple, zip
@@ -107,7 +107,7 @@ The tag is the version. Pushing `vMAJOR.MINOR.PATCH` runs the Release workflow: 
 Developer ID signature with hardened runtime and timestamp, notarization, stapling, Gatekeeper check,
 then a GitHub Release with the zip, its SHA-256, and a signed Sparkle `appcast.xml`.
 
-    git tag v0.2.1 && git push origin v0.2.1
+    git tag v0.3.0 && git push origin v0.3.0
 
 | Secret | Contents |
 |---|---|
