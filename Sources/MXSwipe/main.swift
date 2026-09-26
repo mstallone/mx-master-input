@@ -20,7 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let logger = Logger(subsystem: "com.mattstallone.mxmasterinput", category: "App")
     private let session = MXMasterSession()
     private let updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
-    private var menu: MenuHub?
+    private var hub: MenuHub?
     private var connection: Task<Void, Never>?
     private var retry: Task<Void, Never>?
     private var retryDelay: Duration = .seconds(2)
@@ -30,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var mouseName: String?
 
     private var status = Status.off {
-        didSet { menu?.update() }
+        didSet { hub?.update() }
     }
 
     /// Stored under the key 0.1.x used, so an upgrade keeps the user's choice.
@@ -41,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UserDefaults.standard.register(defaults: ["autoEnable": true])
-        menu = MenuHub(icon: NSImage(systemSymbolName: "computermouse", accessibilityDescription: appName)!) { self.section }
+        hub = MenuHub(icon: NSImage(systemSymbolName: "computermouse", accessibilityDescription: nil)!) { self.section }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemDidWake),
                                                           name: NSWorkspace.didWakeNotification, object: nil)
         if isEnabled { connect() }
@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Menu
 
-    /// The mouse, and its battery or what's keeping gestures from working. Read each time the menu opens.
+    /// This app's part of the menu, read again whenever it may be shown.
     private var section: MenuSection {
         var items: [MenuItem] = []
         switch status {
@@ -69,11 +69,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .action(isEnabled ? "Turn Gestures Off" : "Turn Gestures On") { self.toggleEnabled() },
             .separator,
             .action("Open at Login", isOn: SMAppService.mainApp.status == .enabled) { self.toggleLogin() },
-            .action("Check for Updates…") { self.updater.checkForUpdates(nil) },
+            .action("Check for Updates…", isEnabled: updater.updater.canCheckForUpdates) { self.updater.checkForUpdates(nil) },
         ]
         return MenuSection(header: header, items: items, isActive: status.isActive)
     }
 
+    /// The mouse, and its battery or what's keeping gestures from working.
     private var header: MenuHeader {
         switch status {
         case let .connected(name, battery, asleep):
