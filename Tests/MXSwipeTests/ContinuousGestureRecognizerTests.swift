@@ -1,5 +1,5 @@
 import XCTest
-@testable import MXMasterInput
+@testable import MXSwipe
 
 final class ContinuousGestureRecognizerTests: XCTestCase {
     func testAxesMapToNativeDockSwipeMotionTypes() {

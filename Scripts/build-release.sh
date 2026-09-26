@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds a universal, Developer ID-signed, hardened, notarized, stapled MXMasterInput.app and zips it.
+# Builds a universal, Developer ID-signed, hardened, notarized, stapled MXSwipe.app and zips it.
 # Runs in CI (release.yml). The tag is the version: v1.2.3 -> 1.2.3.
 #
 # Required env (release.yml provides them):
@@ -10,7 +10,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-readonly PRODUCT="MXMasterInput"
+readonly PRODUCT="MXSwipe"
 readonly EXPECTED_TEAM_ID="${APPLE_TEAM_ID:-8KZBNZJBAX}"
 readonly RELEASE_TAG="${1:-${GITHUB_REF_NAME:-}}"
 readonly SIGNING_IDENTITY="${DEVELOPER_ID_APPLICATION_IDENTITY:-}"
@@ -30,7 +30,7 @@ for tool in codesign ditto lipo plutil shasum spctl syspolicy_check xcrun; do
   command -v "$tool" >/dev/null || fail "required command not found: $tool"
 done
 
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/mx-master-input-release.XXXXXX")"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/mxswipe-release.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 readonly APP="$WORK/$PRODUCT.app"
 readonly OUT="${RELEASE_OUTPUT_DIR:-$ROOT/dist}"

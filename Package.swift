@@ -2,16 +2,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "MXMasterInput",
+    name: "MXSwipe",
     platforms: [.macOS(.v26)],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.4"),
     ],
     targets: [
         .executableTarget(
-            name: "MXMasterInput",
+            name: "MXSwipe",
             dependencies: ["SystemEvents", .product(name: "Sparkle", package: "Sparkle")],
-            path: "Sources/MXMasterInput",
+            path: "Sources/MXSwipe",
             swiftSettings: [.swiftLanguageMode(.v6)],
             linkerSettings: [
                 .linkedFramework("IOKit"),
@@ -24,9 +24,9 @@ let package = Package(
             linkerSettings: [.linkedFramework("ApplicationServices")]
         ),
         .testTarget(
-            name: "MXMasterInputTests",
-            dependencies: ["MXMasterInput"],
-            path: "Tests/MXMasterInputTests",
+            name: "MXSwipeTests",
+            dependencies: ["MXSwipe"],
+            path: "Tests/MXSwipeTests",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(

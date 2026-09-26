@@ -18,7 +18,7 @@ Choose Finish when done."
 tell application "System Events"
     activate
     try
-        display dialog instructions default answer "" with hidden answer buttons {"Finish"} default button "Finish" giving up after 600 with title "MX Master Secure Input Test"
+        display dialog instructions default answer "" with hidden answer buttons {"Finish"} default button "Finish" giving up after 600 with title "MXSwipe Secure Input Test"
     on error number -128
         -- Closing the dialog is also a normal end to the test.
     end try

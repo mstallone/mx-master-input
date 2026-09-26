@@ -1,6 +1,6 @@
 import Carbon.HIToolbox
 import XCTest
-@testable import MXMasterInput
+@testable import MXSwipe
 
 final class DockSwipeControllerTests: XCTestCase {
     private typealias Swipe = DockSwipeController.Swipe

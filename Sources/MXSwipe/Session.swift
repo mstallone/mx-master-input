@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 
 /// What the session reports after connecting.
-enum SessionEvent: Equatable, Sendable {
+enum SessionEvent: Sendable {
     case battery(Int?)
     /// The mouse's wireless link dropped, usually because it went to sleep.
     case asleep
@@ -14,7 +14,7 @@ enum SessionEvent: Equatable, Sendable {
     case receiverRemoved
 }
 
-struct ConnectedMouse: Equatable, Sendable {
+struct ConnectedMouse: Sendable {
     let name: String
     let batteryPercent: Int?
     let hapticSupported: Bool
@@ -41,7 +41,8 @@ enum SessionError: LocalizedError {
 
 /// The HID++ conversation with one MX Master 4: finds it behind the receiver, diverts the Sense Panel and
 /// thumb wheel to this app, turns off the panel's haptic click, and turns their reports into Dock swipes
-/// and scroll gestures. Undoes all of it on stop, and reapplies it whenever the mouse wakes.
+/// and scroll gestures. Hands the panel and wheel back on stop (the haptic click returns when the mouse
+/// next sleeps), and reapplies everything whenever the mouse wakes.
 ///
 /// Requests are synchronous: they block the session queue until the reply arrives on the HID queue.
 /// Every other piece of state is confined to the session queue.

@@ -28,4 +28,4 @@ jobs:
         run: swift build -c release --arch arm64 --arch x86_64
 
       - name: Stage app bundle
-        run: Scripts/build-app.sh "$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/MXMasterInput" .build/ci/MXMasterInput.app
+        run: Scripts/build-app.sh "$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/MXSwipe" .build/ci/MXSwipe.app
