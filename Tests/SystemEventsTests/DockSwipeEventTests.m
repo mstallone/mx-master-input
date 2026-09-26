@@ -1,5 +1,5 @@
 #import <XCTest/XCTest.h>
-#import "../../Sources/MXMasterInput/NativeBridge/MXDockSwipeEvent.h"
+#import "SystemEvents.h"
 #include <dlfcn.h>
 #include <math.h>
 
@@ -13,10 +13,10 @@
 - (NSArray<id<MXHIDEventInspection>> *)children;
 @end
 
-@interface MXDockSwipeEventTests : XCTestCase
+@interface DockSwipeEventTests : XCTestCase
 @end
 
-@implementation MXDockSwipeEventTests
+@implementation DockSwipeEventTests
 
 - (void)setUp {
     [super setUp];

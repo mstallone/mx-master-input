@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+@testable import MXMasterInput
 
 final class ThumbWheelScrollControllerTests: XCTestCase {
     func testEventsArePreciseHorizontalAppKitScrollGestures() throws {

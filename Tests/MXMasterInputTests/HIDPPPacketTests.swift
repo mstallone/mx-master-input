@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+@testable import MXMasterInput
 
 final class HIDPPPacketTests: XCTestCase {
     func testRequestEncodingUsesLongReportAndSoftwareID() {
@@ -150,7 +151,7 @@ final class HIDPPPacketTests: XCTestCase {
             deviceIndex: 1,
             featureIndex: 0x0B,
             function: 2,
-            parameters: MXMasterProtocol.hapticOffParameters
+            parameters: SensePanel.hapticOff
         )
         let bytes = [UInt8](data)
 
@@ -159,8 +160,8 @@ final class HIDPPPacketTests: XCTestCase {
     }
 
     func testSensePanelReportingConstantsMatchMXMaster4Protocol() {
-        XCTAssertEqual(MXMasterProtocol.sensePanelControlID, 0x01A0)
-        XCTAssertEqual(MXMasterProtocol.divertPanelWithRawXY, 0x33)
-        XCTAssertEqual(MXMasterProtocol.restorePanelRawXYDefault, 0x22)
+        XCTAssertEqual(SensePanel.controlID, 0x01A0)
+        XCTAssertEqual(SensePanel.divertWithRawXY, 0x33)
+        XCTAssertEqual(SensePanel.restoreDefault, 0x22)
     }
 }
