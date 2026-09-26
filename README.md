@@ -127,3 +127,7 @@ in [Mac Mouse Fix](https://github.com/noah-nuebling/mac-mouse-fix), under its
 
 MX Master Input is an independent project and is not affiliated with Apple or
 Logitech.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
