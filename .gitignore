@@ -1,12 +1,4 @@
-.DS_Store
 .build/
 .swiftpm/
-build/
 dist/
-DerivedData*/
-PreviewDerivedData/
-*.xcarchive
-*.dSYM
-*.xcresult
-*.xcuserstate
-xcuserdata/
+.DS_Store

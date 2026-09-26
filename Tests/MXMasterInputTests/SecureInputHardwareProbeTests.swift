@@ -1,68 +1,35 @@
 import Carbon
-import Foundation
 import XCTest
+@testable import MXMasterInput
 
-/// Opt-in hardware verification. The normal test suite skips this test.
+/// Opt-in check against a real MX Master 4, skipped by default:
 ///
-/// Run with:
-/// TEST_RUNNER_MXMASTER_RUN_HARDWARE_PROBE=1 xcodebuild ... \
-///   -only-testing:MXMasterInputTests/SecureInputHardwareProbeTests
+///     MXMASTER_RUN_HARDWARE_PROBE=1 swift test --filter SecureInputHardwareProbeTests
 ///
-/// The probe enables Secure Event Input only for its own process lifetime,
-/// performs HID++ reads in observation mode, and then disables Secure Event
-/// Input. It does not divert a control, change haptic state, or post an event.
+/// Turns on Secure Event Input for this process, then connects in observation mode, which reads from the
+/// mouse without diverting a control, changing haptics, or posting an event.
 final class SecureInputHardwareProbeTests: XCTestCase {
     func testReadsMXMaster4DirectlyWhileSecureInputIsEnabled() async throws {
-        guard ProcessInfo.processInfo.environment[
-            "MXMASTER_RUN_HARDWARE_PROBE"
-        ] == "1" else {
-            throw XCTSkip("Hardware probe is opt-in.")
-        }
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["MXMASTER_RUN_HARDWARE_PROBE"] == "1", "Hardware probe is opt-in.")
 
-        let enableStatus = await MainActor.run {
-            EnableSecureEventInput()
-        }
-        XCTAssertEqual(enableStatus, noErr)
-
-        let secureInputBecameEnabled = await MainActor.run {
-            IsSecureEventInputEnabled()
-        }
-        XCTAssertTrue(secureInputBecameEnabled)
+        let enabled = await MainActor.run { EnableSecureEventInput() }
+        XCTAssertEqual(enabled, noErr)
+        XCTAssertTrue(IsSecureEventInputEnabled())
 
         let session = MXMasterSession()
-        do {
-            let device = try await session.start(
-                activeMode: false,
-                eventHandler: { _ in },
-                gestureHandler: { _ in
-                    XCTFail("Observation mode must not produce a gesture.")
-                },
-                tapHandler: {
-                    XCTFail("Observation mode must not produce a tap.")
-                }
-            )
+        let result: Result<ConnectedMouse, Error>
+        do { result = .success(try await session.start(activeMode: false) { _ in }) } catch { result = .failure(error) }
+        await session.stop()
+        let disabled = await MainActor.run { DisableSecureEventInput() }
+        XCTAssertEqual(disabled, noErr)
 
-            XCTAssertTrue(
-                device.name.localizedCaseInsensitiveContains("MX Master 4")
-            )
-            XCTAssertTrue(device.hapticSupported)
-            XCTAssertFalse(device.hapticDisabled)
-            XCTAssertFalse(device.panelDiverted)
-            let batteryPercent = try XCTUnwrap(device.batteryPercent)
-            XCTAssertTrue((0 ... 100).contains(batteryPercent))
-            print("MX Master 4 battery: \(batteryPercent)%")
-            await session.stop()
-        } catch {
-            await session.stop()
-            _ = await MainActor.run {
-                DisableSecureEventInput()
-            }
-            throw error
-        }
-
-        let disableStatus = await MainActor.run {
-            DisableSecureEventInput()
-        }
-        XCTAssertEqual(disableStatus, noErr)
+        let mouse = try result.get()
+        XCTAssertTrue(mouse.name.localizedCaseInsensitiveContains("MX Master 4"))
+        XCTAssertTrue(mouse.hapticSupported)
+        XCTAssertFalse(mouse.hapticDisabled)
+        XCTAssertFalse(mouse.panelDiverted)
+        let battery = try XCTUnwrap(mouse.batteryPercent)
+        XCTAssertTrue((0 ... 100).contains(battery))
+        print("\(mouse.name) battery: \(battery)%")
     }
 }

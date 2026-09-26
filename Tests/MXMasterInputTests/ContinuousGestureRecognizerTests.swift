@@ -1,20 +1,7 @@
 import XCTest
+@testable import MXMasterInput
 
 final class ContinuousGestureRecognizerTests: XCTestCase {
-    func testDirectionsMapToStandardMacOSArrowKeyCodes() {
-        XCTAssertEqual(GestureDirection.left.controlArrowKeyCode, 123)
-        XCTAssertEqual(GestureDirection.right.controlArrowKeyCode, 124)
-        XCTAssertEqual(GestureDirection.up.controlArrowKeyCode, 126)
-        XCTAssertEqual(GestureDirection.down.controlArrowKeyCode, 125)
-    }
-
-    func testDirectionsAreReversed() {
-        XCTAssertEqual(GestureDirection.left.reversed, .right)
-        XCTAssertEqual(GestureDirection.right.reversed, .left)
-        XCTAssertEqual(GestureDirection.up.reversed, .down)
-        XCTAssertEqual(GestureDirection.down.reversed, .up)
-    }
-
     func testAxesMapToNativeDockSwipeMotionTypes() {
         XCTAssertEqual(GestureAxis.horizontal.rawValue, 1)
         XCTAssertEqual(GestureAxis.vertical.rawValue, 2)
@@ -113,7 +100,6 @@ final class ContinuousGestureRecognizerTests: XCTestCase {
         XCTAssertEqual(update?.phase, .began)
         XCTAssertEqual(update?.axis, .vertical)
         XCTAssertEqual(update?.delta, -30)
-        XCTAssertEqual(update?.direction, .up)
     }
 
     func testSteepDownwardDiagonalWaitsForPressureRejectionThreshold() {
@@ -129,7 +115,6 @@ final class ContinuousGestureRecognizerTests: XCTestCase {
         XCTAssertEqual(update?.phase, .began)
         XCTAssertEqual(update?.axis, .vertical)
         XCTAssertEqual(update?.delta, 46)
-        XCTAssertEqual(update?.direction, .down)
     }
 
     func testUpwardMovementEmitsBufferedVerticalMotion() {
@@ -241,10 +226,7 @@ final class ContinuousGestureRecognizerTests: XCTestCase {
         )
 
         recognizer.begin()
-        XCTAssertEqual(
-            recognizer.ingest(dx: 0, dy: -30)?.direction,
-            .up
-        )
+        XCTAssertEqual(recognizer.ingest(dx: 0, dy: -30)?.delta, -30)
         XCTAssertTrue(recognizer.end().didBeginSwipe)
 
         isMissionControlActive = true
@@ -252,7 +234,7 @@ final class ContinuousGestureRecognizerTests: XCTestCase {
         let update = recognizer.ingest(dx: 0, dy: 45)
         XCTAssertEqual(update?.phase, .began)
         XCTAssertEqual(update?.axis, .vertical)
-        XCTAssertEqual(update?.direction, .down)
+        XCTAssertEqual(update?.delta, 45)
         XCTAssertTrue(recognizer.end().didBeginSwipe)
     }
 

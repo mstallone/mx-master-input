@@ -1,70 +1,62 @@
 import CoreGraphics
 import Foundation
 
-/// HID++ 0x2150 reports rotation separately from touch/proximity changes.
+/// A rotation or touch report from the HID++ thumb wheel feature (0x2150), once it is diverted.
 struct ThumbWheelReport: Equatable {
-    enum State: UInt8 {
-        case inactive = 0, began = 1, changed = 2, ended = 3
-    }
+    enum State: UInt8 { case inactive = 0, began = 1, changed = 2, ended = 3 }
 
     let delta: Int
     let state: State
 
     init?(packet: HIDPPPacket, deviceIndex: UInt8, featureIndex: UInt8) {
-        guard packet.deviceIndex == deviceIndex,
-              packet.featureIndex == featureIndex,
-              packet.softwareID == 0, packet.function == 0,
-              packet.parameters.count >= 6,
-              let state = State(rawValue: packet.parameters[4]) else {
-            return nil
-        }
-        delta = Int(Int16(bitPattern:
-            UInt16(packet.parameters[0]) << 8 | UInt16(packet.parameters[1])
-        ))
+        guard packet.deviceIndex == deviceIndex, packet.featureIndex == featureIndex,
+              packet.softwareID == 0, packet.function == 0, packet.parameters.count >= 6,
+              let state = State(rawValue: packet.parameters[4]) else { return nil }
+        delta = signed16(packet.parameters[0], packet.parameters[1])
         self.state = state
     }
 }
 
-/// Confined to the HID session queue, including its idle watchdog.
+/// Turns thumb wheel rotation into the phased, pixel-precise horizontal scroll gesture a trackpad
+/// produces, so apps can scroll content or swipe between pages as they would with two fingers.
+///
+/// Each wheel step is spread over a few 120 Hz frames. Confined to the session queue, which also runs
+/// its frame timer.
 final class ThumbWheelScrollController: @unchecked Sendable {
-    enum Phase: Int64 {
-        case began = 1, changed = 2, ended = 4, cancelled = 8
-    }
+    enum Phase: Int64 { case began = 1, changed = 2, ended = 4, cancelled = 8 }
+
+    /// Set from the device's reported resolution and direction when the wheel is configured.
+    var pixelsPerUnit = 10.0
+    var deviceDirection = 1.0
+    private(set) var isActive = false
 
     private let queue: DispatchQueue?
     private let smoothingFrames: Int
+    private let post: (CGEvent) -> Void
+    private let naturalScrolling: () -> Bool
+    private let pointerLocation: () -> CGPoint
+    private let eventSource = makeEventSource()
     private var timer: DispatchSourceTimer?
     private var pendingFrames: [Double] = []
     private var pixelRemainder = 0.0
     private var ending = false
     private var beganPosted = false
-    private let post: (CGEvent) -> Void
-    private let naturalScrolling: () -> Bool
-    private let pointerLocation: () -> CGPoint
-    private let eventSource = makeEventSource()
-    private(set) var isActive = false
     private var direction = 1.0
-    var pixelsPerUnit = 10.0
-    var deviceDirection = 1.0
 
+    /// Without a queue there is no frame timer; tests drive frames with `advanceFrame()`.
     init(
         queue: DispatchQueue? = nil,
         smoothingFrames: Int = 4,
-        pointerLocation: @escaping () -> CGPoint = {
-            CGEvent(source: nil)?.location ?? .zero
-        },
-        naturalScrolling: @escaping () -> Bool = {
-            (UserDefaults.standard.object(forKey: "com.apple.swipescrolldirection")
-                as? Bool) ?? true
-        },
+        pointerLocation: @escaping () -> CGPoint = { CGEvent(source: nil)?.location ?? .zero },
+        naturalScrolling: @escaping () -> Bool = isNaturalScrollingEnabled,
         post: @escaping (CGEvent) -> Void = { $0.post(tap: .cgSessionEventTap) }
     ) {
         precondition(smoothingFrames > 0)
         self.queue = queue
         self.smoothingFrames = smoothingFrames
+        self.pointerLocation = pointerLocation
         self.naturalScrolling = naturalScrolling
         self.post = post
-        self.pointerLocation = pointerLocation
     }
 
     func consume(_ report: ThumbWheelReport) {
@@ -76,22 +68,18 @@ final class ThumbWheelScrollController: @unchecked Sendable {
             ending = false
             if !isActive {
                 isActive = true
-                // Normalize firmware direction, then freeze the user's scroll
-                // preference until this gesture ends.
-                // Positive CG horizontal deltas move the viewport left.
+                // Positive horizontal CG deltas move the viewport left. Normalize the firmware's
+                // direction, then freeze the scroll preference for the rest of the gesture.
                 direction = -deviceDirection * (naturalScrolling() ? -1 : 1)
             }
             let delta = Double(report.delta) * pixelsPerUnit * direction
-            // Do not let buffered movement delay a physical reversal.
-            if pendingFrames.reduce(0, +) * delta < 0 {
-                flushPendingFrames()
-            }
+            // A reversal takes effect now rather than after the buffered motion drains.
+            if pendingFrames.reduce(0, +) * delta < 0 { flushPendingFrames() }
             let exactPixels = delta + pixelRemainder
             let pixels = exactPixels.rounded()
             pixelRemainder = exactPixels - pixels
             while pendingFrames.count < smoothingFrames { pendingFrames.append(0) }
-            // Integer pixel slices preserve the total distance without rounding
-            // away small wheel movements at each animation frame.
+            // Whole-pixel slices that sum to the total, so slow turns aren't rounded away frame by frame.
             for index in 0 ..< smoothingFrames {
                 pendingFrames[index] += (pixels * Double(index + 1) / Double(smoothingFrames)).rounded()
                     - (pixels * Double(index) / Double(smoothingFrames)).rounded()
@@ -99,11 +87,10 @@ final class ThumbWheelScrollController: @unchecked Sendable {
             if !beganPosted { advanceFrame() }
             startTimerIfNeeded()
         }
-        if report.state == .ended || report.state == .inactive {
-            finish()
-        }
+        if report.state == .ended || report.state == .inactive { finish() }
     }
 
+    /// Ends the gesture once buffered frames have drained, or immediately when cancelling.
     func finish(cancelled: Bool = false) {
         guard isActive else { return }
         if !cancelled, !pendingFrames.isEmpty {
@@ -120,7 +107,6 @@ final class ThumbWheelScrollController: @unchecked Sendable {
         pixelRemainder = 0
     }
 
-    /// Also used by deterministic tests; production calls this at 120 Hz.
     func advanceFrame() {
         if !pendingFrames.isEmpty {
             let delta = pendingFrames.removeFirst()
@@ -143,8 +129,7 @@ final class ThumbWheelScrollController: @unchecked Sendable {
     private func startTimerIfNeeded() {
         guard timer == nil, !pendingFrames.isEmpty, let queue else { return }
         let timer = DispatchSource.makeTimerSource(queue: queue)
-        timer.schedule(deadline: .now() + 1.0 / 120, repeating: 1.0 / 120,
-                       leeway: .milliseconds(1))
+        timer.schedule(deadline: .now() + 1.0 / 120, repeating: 1.0 / 120, leeway: .milliseconds(1))
         timer.setEventHandler { [weak self] in self?.advanceFrame() }
         self.timer = timer
         timer.resume()
@@ -152,33 +137,30 @@ final class ThumbWheelScrollController: @unchecked Sendable {
 
     private func send(delta: Double, phase: Phase) {
         guard let event = Self.makeEvent(delta: delta, phase: phase, source: eventSource) else { return }
-        // A wheel gesture must not replay the pointer position from its start.
-        // Sample even for buffered frames and the final end/cancel event.
+        // Sample the pointer and modifiers for every frame, including the final one, so the scroll lands
+        // where the pointer is now rather than where the gesture started.
         event.location = pointerLocation()
         event.flags = CGEvent(source: nil)?.flags ?? []
         post(event)
     }
 
+    /// A private source whose events don't suppress the user's own mouse and keyboard input.
     static func makeEventSource() -> CGEventSource? {
         guard let source = CGEventSource(stateID: .privateState) else { return nil }
         source.localEventsSuppressionInterval = 0
-        let allowed: CGEventFilterMask = [
-            .permitLocalMouseEvents, .permitLocalKeyboardEvents, .permitSystemDefinedEvents,
-        ]
+        let allowed: CGEventFilterMask = [.permitLocalMouseEvents, .permitLocalKeyboardEvents, .permitSystemDefinedEvents]
         source.setLocalEventsFilterDuringSuppressionState(allowed, state: .eventSuppressionStateSuppressionInterval)
         source.setLocalEventsFilterDuringSuppressionState(allowed, state: .eventSuppressionStateRemoteMouseDrag)
         return source
     }
 
     static func makeEvent(delta: Double, phase: Phase, source: CGEventSource? = nil) -> CGEvent? {
-        guard let source = source ?? makeEventSource(), let event = CGEvent(
-            scrollWheelEvent2Source: source, units: .pixel, wheelCount: 2,
-            wheel1: 0, wheel2: Int32(delta.rounded()), wheel3: 0
-        ) else { return nil }
+        guard let source = source ?? makeEventSource(),
+              let event = CGEvent(scrollWheelEvent2Source: source, units: .pixel, wheelCount: 2,
+                                  wheel1: 0, wheel2: Int32(delta.rounded()), wheel3: 0) else { return nil }
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+        // The line delta keeps the initializer's fixed-point value; precise consumers read this one.
         event.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: delta)
-        // Keep the initializer's fixed-point line delta. It is deliberately
-        // different from the pixel delta used by precise-scroll consumers.
         event.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase.rawValue)
         event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: 0)
         return event

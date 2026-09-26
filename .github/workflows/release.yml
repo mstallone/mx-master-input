@@ -33,9 +33,8 @@ jobs:
 
       - name: Verify build environment
         run: |
-          set -euo pipefail
           sw_vers
-          xcodebuild -version
+          swift --version
 
       - name: Validate release tag and secrets
         env:
@@ -67,17 +66,8 @@ jobs:
             fi
           done
 
-      - name: Run tests
-        run: |
-          set -euo pipefail
-          xcodebuild \
-            -project MXMasterInput.xcodeproj \
-            -scheme MXMasterInput \
-            -configuration Debug \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData-tests" \
-            -destination "platform=macOS,arch=$(uname -m)" \
-            CODE_SIGNING_ALLOWED=NO \
-            build test
+      - name: Test
+        run: swift test
 
       - name: Import NextByte Developer ID certificate
         env:
@@ -149,21 +139,7 @@ jobs:
       - name: Generate signed Sparkle appcast
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
-        run: |
-          set -euo pipefail
-          generate_appcast="$(
-            find "$RUNNER_TEMP/DerivedData-tests/SourcePackages/artifacts" \
-              -type f \
-              -path '*/Sparkle/bin/generate_appcast' \
-              -print \
-              -quit
-          )"
-          if [[ -z "$generate_appcast" ]]; then
-            echo "::error::Sparkle's generate_appcast tool was not resolved."
-            exit 1
-          fi
-          SPARKLE_GENERATE_APPCAST_PATH="$generate_appcast" \
-            Scripts/generate-appcast.sh "$GITHUB_REF_NAME"
+        run: Scripts/generate-appcast.sh "$GITHUB_REF_NAME"
 
       - name: Publish GitHub release
         env:
