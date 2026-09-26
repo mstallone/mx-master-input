@@ -1,5 +1,5 @@
 #!/bin/bash
-# Signs MXMasterInput.app inside out: Sparkle's helpers, Sparkle, then the app. Sparkle ships ad-hoc
+# Signs MXSwipe.app inside out: Sparkle's helpers, Sparkle, then the app. Sparkle ships ad-hoc
 # signed helpers, which a Developer ID app can't load, and --deep would drop the Downloader's entitlements.
 #   Scripts/sign.sh <app> <identity> [extra codesign flags...]
 set -euo pipefail

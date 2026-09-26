@@ -3,11 +3,11 @@ import OSLog
 import ServiceManagement
 import Sparkle
 
-let appName = "MX Master Input"
+let appName = "MXSwipe"
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    enum Status: Equatable {
+    enum Status {
         case off
         case needsAccessibility
         case connecting
@@ -87,7 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        addInfo("\(appName) \(version)")
+        menu.addItem(withTitle: "\(appName) \(version)", action: nil, keyEquivalent: "")
         menu.addItem(withTitle: "Quit \(appName)", action: #selector(NSApplication.terminate), keyEquivalent: "q")
     }
 
@@ -101,10 +101,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         case .needsAccessibility: MenuHeaderView(title: "MX Master 4", detail: .message("\(appName) needs Accessibility permission."))
         case let .failed(message, _): MenuHeaderView(title: "MX Master 4", detail: .message(message))
         }
-    }
-
-    private func addInfo(_ title: String) {
-        menu.addItem(withTitle: title, action: nil, keyEquivalent: "")
     }
 
     @objc private func toggleEnabled() {
@@ -228,9 +224,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 }
 
 extension AppDelegate {
-    /// The menu-bar glyph at full strength while gestures work, and faded otherwise, as Runway fades a
-    /// spent meter. Faded by drawing at partial opacity rather than with `appearsDisabled`, so the level
-    /// is the same on every menu bar; it stays a template, so the menu bar still tints it.
+    /// The menu-bar glyph, at full strength while gestures work and faded otherwise. Faded by drawing at
+    /// partial opacity rather than with `appearsDisabled`, so the level is the same on every menu bar;
+    /// it stays a template, so the menu bar still tints it.
     private static func icon(opacity: CGFloat, description: String) -> NSImage {
         let symbol = NSImage(systemSymbolName: "computermouse", accessibilityDescription: nil)!
         let image = NSImage(size: symbol.size, flipped: false) { rect in

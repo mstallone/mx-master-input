@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import MXMasterInput
+@testable import MXSwipe
 
 final class HIDPPPacketTests: XCTestCase {
     func testRequestEncodingUsesLongReportAndSoftwareID() {

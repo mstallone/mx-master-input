@@ -1,6 +1,6 @@
 import Carbon
 import XCTest
-@testable import MXMasterInput
+@testable import MXSwipe
 
 /// Opt-in check against a real MX Master 4, skipped by default:
 ///
