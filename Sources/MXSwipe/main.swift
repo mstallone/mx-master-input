@@ -1,8 +1,8 @@
 import AppKit
 import MenuHub
+import MenuHubSparkle
 import OSLog
 import ServiceManagement
-import Sparkle
 
 let appName = "MXSwipe"
 
@@ -19,7 +19,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private static let logger = Logger(subsystem: "com.mattstallone.mxmasterinput", category: "App")
     private let session = MXMasterSession()
-    private let updater = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
     private var hub: MenuHub?
     private var connection: Task<Void, Never>?
     private var retry: Task<Void, Never>?
@@ -41,7 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UserDefaults.standard.register(defaults: ["autoEnable": true])
-        hub = MenuHub(symbol: "computermouse") { self.section }
+        hub = MenuHub(symbol: "computermouse", updater: SparkleUpdater()) { self.section }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemDidWake),
                                                           name: NSWorkspace.didWakeNotification, object: nil)
         if isEnabled { connect() }
@@ -69,7 +68,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .action(isEnabled ? "Turn Gestures Off" : "Turn Gestures On") { self.toggleEnabled() },
             .separator,
             .action("Open at Login", isOn: SMAppService.mainApp.status == .enabled) { self.toggleLogin() },
-            .action("Check for Updates…", isEnabled: updater.updater.canCheckForUpdates) { self.updater.checkForUpdates(nil) },
         ]
         return MenuSection(header: header, items: items, isActive: status.isActive)
     }
