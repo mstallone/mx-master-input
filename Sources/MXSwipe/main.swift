@@ -41,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         UserDefaults.standard.register(defaults: ["autoEnable": true])
-        hub = MenuHub(icon: NSImage(systemSymbolName: "computermouse", accessibilityDescription: nil)!) { self.section }
+        hub = MenuHub(symbol: "computermouse") { self.section }
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(systemDidWake),
                                                           name: NSWorkspace.didWakeNotification, object: nil)
         if isEnabled { connect() }

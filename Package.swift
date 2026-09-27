@@ -6,7 +6,7 @@ let package = Package(
     platforms: [.macOS(.v26)],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.4"),
-        .package(url: "https://github.com/mstallone/menuhub", exact: "0.1.0"),
+        .package(url: "https://github.com/mstallone/menuhub", exact: "0.2.0"),
     ],
     targets: [
         .executableTarget(
