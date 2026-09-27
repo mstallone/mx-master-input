@@ -5,7 +5,7 @@ let package = Package(
     name: "MXSwipe",
     platforms: [.macOS(.v26)],
     dependencies: [
-        .package(path: "../menuhub"),
+        .package(url: "https://github.com/mstallone/menuhub", exact: "0.3.0"),
     ],
     targets: [
         .executableTarget(
