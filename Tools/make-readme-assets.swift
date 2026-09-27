@@ -18,12 +18,12 @@ let barHeight: CGFloat = 24
 
 /// The menu as MXSwipe shows it on its own, with the mouse connected.
 @MainActor func makeMenu() -> NSMenu {
-    let mxswipe = Member(pid: 1, name: "MXSwipe", launched: Date(), yieldsIcon: false, checksForUpdates: true, revision: 0,
-                         isActive: true, header: MenuHeader(title: "MX Master 4", detail: .battery(83)), items: [
+    let mxswipe = Member(pid: 1, name: "MXSwipe", version: "0.3.3", launched: Date(), yieldsIcon: false, checksForUpdates: true,
+                         revision: 0, isActive: true, header: MenuHeader(title: "MX Master 4", detail: .battery(83)), items: [
                              .action("Turn Gestures Off") {}, .separator, .action("Open at Login", isOn: true) {},
                          ])
     let menu = NSMenu()
-    MenuHub.populate(menu, with: [mxswipe], version: "0.3.2", canCheckForUpdates: true, target: nil)
+    MenuHub.populate(menu, with: [mxswipe], canCheckForUpdates: true, target: nil)
     return menu
 }
 
